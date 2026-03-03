@@ -9,7 +9,20 @@
       "Bash(\"/c/Program Files/heroku/bin/heroku\" auth:whoami)",
       "Bash(\"/c/Program Files/heroku/bin/heroku\" apps:info scheduler2026)",
       "Bash(git init)",
-      "Bash(git add -A)"
+      "Bash(git add -A)",
+      "Bash(git config user.email \"alexlvov@gmail.com\")",
+      "Bash(git config user.name \"Unit 6017\")",
+      "Bash(git commit -m \"Initial commit - Unit 6017 Scheduler\")",
+      "Bash(\"/c/Program Files/heroku/bin/heroku\" git:remote -a scheduler2026)",
+      "Bash(\"/c/Program Files/heroku/bin/heroku\" config:set PORT=3000 DB_SERVER=dnet.database.windows.net DB_PORT=1433 DB_USER=dnet DB_PASSWORD=idflogin1! DB_NAME=6017 SESSION_SECRET=unit6017secretkey_changeme ADMIN_PASSWORD=unit6017 --app scheduler2026)",
+      "Bash(git push heroku master)",
+      "Bash(\"/c/Program Files/heroku/bin/heroku\" logs --tail --num 30 --app scheduler2026)",
+      "Bash(git add server.js)",
+      "Bash(git commit -m \"Fix session cookie on Heroku: add trust proxy\")",
+      "Bash(node cleanup.js)",
+      "Bash(gh --version)",
+      "Bash(git add .claude/settings.local.json)",
+      "Bash(git commit -m \"Update Claude Code settings\")"
     ]
   }
 }
