@@ -8,6 +8,9 @@ const { initializeDatabase } = require('./config/initDb');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust Heroku's reverse proxy so secure cookies work over HTTPS
+app.set('trust proxy', 1);
+
 // View engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
