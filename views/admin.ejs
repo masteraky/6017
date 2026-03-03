@@ -185,6 +185,7 @@
                 <tr><td colspan="3" class="text-center text-muted py-3">אין תפקידים</td></tr>
                 <% } %>
                 <% roles.forEach(r => { %>
+                <% const rolePersonnelCount = personnel.filter(p => p.role_id === r.id).length; %>
                 <tr id="role-row-<%= r.id %>">
                   <td>
                     <span class="role-display-<%= r.id %>"><%= r.name %></span>
@@ -199,12 +200,12 @@
                     <% } %>
                   </td>
                   <td>
-                    <form action="/admin/roles/<%= r.id %>/delete" method="POST" class="d-inline"
-                          onsubmit="return confirm('למחוק תפקיד זה?')">
-                      <button type="submit" class="btn btn-sm btn-outline-danger">
-                        <i class="bi bi-trash"></i>
-                      </button>
-                    </form>
+                    <button type="button" class="btn btn-sm btn-outline-danger delete-role-btn"
+                            data-role-id="<%= r.id %>"
+                            data-role-name="<%= r.name %>"
+                            data-personnel-count="<%= rolePersonnelCount %>">
+                      <i class="bi bi-trash"></i>
+                    </button>
                   </td>
                 </tr>
                 <% }); %>
@@ -784,6 +785,68 @@ async function deleteRequirement(shiftId, roleId) {
 }
 
 // Guide tab search (placeholder, no JS needed)
+
+// ===== DELETE ROLE MODAL =====
+document.querySelectorAll('.delete-role-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    showDeleteRoleModal(
+      parseInt(btn.dataset.roleId),
+      btn.dataset.roleName,
+      parseInt(btn.dataset.personnelCount)
+    );
+  });
+});
+
+let _deleteRoleId = null;
+
+function showDeleteRoleModal(roleId, roleName, personnelCount) {
+  _deleteRoleId = roleId;
+  document.getElementById('deleteRoleForm').action = `/admin/roles/${roleId}/delete`;
+  document.getElementById('drPersonnelAction').value = '';
+  document.getElementById('drNewRoleId').value = '';
+  document.getElementById('drRoleInfo').textContent = `תפקיד: ${roleName}`;
+
+  // hide/show options based on whether personnel exist
+  const hasPersonnel = personnelCount > 0;
+  document.getElementById('drNoPersonnel').classList.toggle('d-none', hasPersonnel);
+  document.getElementById('drHasPersonnel').classList.toggle('d-none', !hasPersonnel);
+  document.getElementById('drPersonnelCount').textContent = personnelCount;
+
+  // remove the current role from the reassign dropdown
+  document.querySelectorAll('#drTargetRole option').forEach(opt => {
+    opt.hidden = opt.dataset.roleId == roleId;
+  });
+
+  // reset radio buttons
+  document.querySelectorAll('input[name="drAction"]').forEach(r => r.checked = false);
+  document.getElementById('drReassignSelect').classList.add('d-none');
+
+  new bootstrap.Modal(document.getElementById('deleteRoleModal')).show();
+}
+
+// toggle reassign dropdown visibility
+document.addEventListener('change', function(e) {
+  if (e.target.name === 'drAction') {
+    document.getElementById('drReassignSelect').classList.toggle('d-none', e.target.value !== 'reassign');
+  }
+});
+
+function confirmDeleteRole() {
+  const hasPersonnel = !document.getElementById('drHasPersonnel').classList.contains('d-none');
+
+  if (hasPersonnel) {
+    const action = document.querySelector('input[name="drAction"]:checked')?.value;
+    if (!action) { alert('יש לבחור פעולה עבור אנשי הצוות המשויכים.'); return; }
+    if (action === 'reassign') {
+      const newRoleId = document.getElementById('drTargetRole').value;
+      if (!newRoleId) { alert('יש לבחור תפקיד חלופי.'); return; }
+      document.getElementById('drNewRoleId').value = newRoleId;
+    }
+    document.getElementById('drPersonnelAction').value = action;
+  }
+
+  document.getElementById('deleteRoleForm').submit();
+}
 </script>
 
 <!-- ========== ADMIN GUIDE TAB ========== -->
@@ -948,6 +1011,67 @@ async function deleteRequirement(shiftId, roleId) {
         </div>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<!-- ===== DELETE ROLE MODAL ===== -->
+<div class="modal fade" id="deleteRoleModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="deleteRoleForm" method="POST">
+        <input type="hidden" name="personnel_action" id="drPersonnelAction" value="">
+        <input type="hidden" name="new_role_id"       id="drNewRoleId"       value="">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title"><i class="bi bi-trash me-2"></i>מחיקת תפקיד</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p id="drRoleInfo" class="fw-semibold mb-3"></p>
+
+          <!-- no personnel: simple confirm -->
+          <div id="drNoPersonnel" class="d-none">
+            <div class="alert alert-warning py-2">
+              <i class="bi bi-exclamation-triangle me-1"></i>פעולה זו אינה הפיכה.
+            </div>
+          </div>
+
+          <!-- has personnel: ask what to do -->
+          <div id="drHasPersonnel" class="d-none">
+            <div class="alert alert-warning py-2 mb-3 small">
+              <i class="bi bi-people-fill me-1"></i>
+              <span id="drPersonnelCount"></span> אנשי צוות משויכים לתפקיד זה. מה לעשות איתם?
+            </div>
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="radio" name="drAction" id="drActionDelete" value="delete">
+              <label class="form-check-label text-danger fw-semibold" for="drActionDelete">
+                <i class="bi bi-person-x me-1"></i>מחק את כל אנשי הצוות המשויכים
+              </label>
+              <div class="text-muted small me-4">יימחקו גם האילוצים והשיבוצים שלהם</div>
+            </div>
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="radio" name="drAction" id="drActionReassign" value="reassign">
+              <label class="form-check-label fw-semibold" for="drActionReassign">
+                <i class="bi bi-arrow-left-right me-1"></i>שייך אותם לתפקיד אחר
+              </label>
+            </div>
+            <div id="drReassignSelect" class="d-none me-4 mt-2">
+              <select class="form-select form-select-sm" id="drTargetRole">
+                <option value="">— בחר תפקיד —</option>
+                <% roles.forEach(function(ro) { %>
+                <option value="<%= ro.id %>" data-role-id="<%= ro.id %>"><%= ro.name %></option>
+                <% }); %>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ביטול</button>
+          <button type="button" class="btn btn-danger" id="drConfirmBtn" onclick="confirmDeleteRole()">
+            <i class="bi bi-trash me-1"></i>מחק תפקיד
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </div>

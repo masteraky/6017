@@ -106,8 +106,33 @@ router.post('/roles/:id/update', requireAdmin, async (req, res) => {
 
 router.post('/roles/:id/delete', requireAdmin, async (req, res) => {
   try {
-    await Roles.delete(parseInt(req.params.id));
-    res.redirect('/admin?tab=roles&success=תפקיד נמחק');
+    const id = parseInt(req.params.id);
+    const { personnel_action, new_role_id } = req.body;
+    const count = await Roles.countPersonnel(id);
+
+    if (count > 0) {
+      if (personnel_action === 'delete') {
+        // Cascade delete: remove constraints + assignments + personnel for this role
+        const { getPool } = require('../config/db');
+        const sql = require('mssql');
+        const pool = await getPool();
+        await pool.request().input('rid', sql.Int, id)
+          .query('DELETE FROM constraints WHERE personnel_id IN (SELECT id FROM personnel WHERE role_id=@rid)');
+        await pool.request().input('rid', sql.Int, id)
+          .query('DELETE FROM schedule_assignments WHERE personnel_id IN (SELECT id FROM personnel WHERE role_id=@rid)');
+        await pool.request().input('rid', sql.Int, id)
+          .query('DELETE FROM personnel WHERE role_id=@rid');
+      } else if (personnel_action === 'reassign' && new_role_id) {
+        await Roles.reassignPersonnel(id, parseInt(new_role_id));
+      } else {
+        return res.redirect('/admin?tab=roles&error=' + encodeURIComponent(
+          `לא ניתן למחוק — ישנם ${count} אנשי צוות המשויכים לתפקיד זה.`
+        ));
+      }
+    }
+
+    await Roles.delete(id);
+    res.redirect('/admin?tab=roles&success=תפקיד נמחק בהצלחה');
   } catch (err) {
     res.redirect('/admin?tab=roles&error=' + encodeURIComponent(err.message));
   }

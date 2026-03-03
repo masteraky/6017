@@ -68,6 +68,19 @@ const Roles = {
     );
   },
 
+  async countPersonnel(id) {
+    const r = await query('SELECT COUNT(*) AS cnt FROM personnel WHERE role_id = @id',
+      [{ name: 'id', type: sql.Int, value: id }]);
+    return r.recordset[0].cnt;
+  },
+
+  async reassignPersonnel(oldRoleId, newRoleId) {
+    await query('UPDATE personnel SET role_id = @newId WHERE role_id = @oldId', [
+      { name: 'newId', type: sql.Int, value: newRoleId },
+      { name: 'oldId', type: sql.Int, value: oldRoleId }
+    ]);
+  },
+
   async delete(id) {
     await query('DELETE FROM roles WHERE id = @id',
       [{ name: 'id', type: sql.Int, value: id }]);
@@ -126,8 +139,11 @@ const Personnel = {
   },
 
   async delete(id) {
-    await query('DELETE FROM personnel WHERE id = @id',
-      [{ name: 'id', type: sql.Int, value: id }]);
+    const p = [{ name: 'id', type: sql.Int, value: id }];
+    // cascade: remove constraints and schedule assignments first
+    await query('DELETE FROM constraints WHERE personnel_id = @id', p);
+    await query('DELETE FROM schedule_assignments WHERE personnel_id = @id', p);
+    await query('DELETE FROM personnel WHERE id = @id', p);
   }
 };
 
