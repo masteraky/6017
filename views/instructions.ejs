@@ -1,0 +1,256 @@
+<%- include('partials/header') %>
+
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+
+    <div class="d-flex align-items-center mb-4">
+      <i class="bi bi-book-half fs-2 text-primary me-3"></i>
+      <div>
+        <h2 class="fw-bold mb-0">הוראות שימוש</h2>
+        <div class="text-muted">מערכת סידור עבודה – יחידה 6017</div>
+      </div>
+    </div>
+
+    <!-- ========== TOC ========== -->
+    <div class="card border-0 bg-light mb-4">
+      <div class="card-body py-3">
+        <div class="fw-semibold mb-2"><i class="bi bi-list-ul me-2"></i>תוכן עניינים</div>
+        <ul class="mb-0 ps-3">
+          <li><a href="#section-overview">סקירה כללית</a></li>
+          <li><a href="#section-constraints">הגשת אילוצים</a></li>
+          <li><a href="#section-schedule-view">צפייה בסידור</a></li>
+          <li><a href="#section-colors">מפתח צבעים</a></li>
+          <li><a href="#section-faq">שאלות נפוצות</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ========== OVERVIEW ========== -->
+    <section id="section-overview" class="mb-5">
+      <h4 class="fw-bold text-primary border-bottom pb-2">
+        <i class="bi bi-info-circle me-2"></i>סקירה כללית
+      </h4>
+      <p>
+        המערכת מאפשרת לאנשי הצוות להגיש <strong>אילוצי זמינות</strong> –
+        תאריכים ומשמרות שבהם אינם יכולים לעבוד. בהתבסס על אילוצים אלה,
+        המנהל מייצר סידור עבודה אוטומטי המאוזן בין כלל אנשי הצוות.
+      </p>
+      <div class="row g-3 mt-1">
+        <div class="col-md-4">
+          <div class="card h-100 border-primary border-opacity-25">
+            <div class="card-body text-center">
+              <i class="bi bi-calendar-x fs-2 text-primary mb-2"></i>
+              <h6 class="fw-bold">שלב 1 – הגשת אילוצים</h6>
+              <small class="text-muted">סמן ימים/משמרות שאינך יכול לעבוד</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card h-100 border-success border-opacity-25">
+            <div class="card-body text-center">
+              <i class="bi bi-cpu fs-2 text-success mb-2"></i>
+              <h6 class="fw-bold">שלב 2 – ייצור אוטומטי</h6>
+              <small class="text-muted">המנהל מריץ את האלגוריתם</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card h-100 border-info border-opacity-25">
+            <div class="card-body text-center">
+              <i class="bi bi-table fs-2 text-info mb-2"></i>
+              <h6 class="fw-bold">שלב 3 – פרסום הסידור</h6>
+              <small class="text-muted">קבל קישור לסידור שנוצר</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== CONSTRAINTS ========== -->
+    <section id="section-constraints" class="mb-5">
+      <h4 class="fw-bold text-primary border-bottom pb-2">
+        <i class="bi bi-calendar-x me-2"></i>הגשת אילוצים
+      </h4>
+
+      <ol class="list-group list-group-numbered mb-4">
+        <li class="list-group-item d-flex gap-3">
+          <div>
+            <div class="fw-semibold">בחר את שמך</div>
+            <div class="text-muted small">בתפריט הנפתח בחלק העליון של עמוד הבית. לאחר הבחירה יוטענו האילוצים הקיימים שלך.</div>
+          </div>
+        </li>
+        <li class="list-group-item d-flex gap-3">
+          <div>
+            <div class="fw-semibold">לחץ על יום בלוח השנה</div>
+            <div class="text-muted small">
+              כל לחיצה מחליפה את מצב היום בין:
+              <span class="badge bg-danger text-white">כל היום חסום</span>
+              <span class="badge bg-warning text-dark">משמרת ספציפית</span>
+              <span class="badge bg-light border text-muted">פנוי</span>
+            </div>
+          </div>
+        </li>
+        <li class="list-group-item d-flex gap-3">
+          <div>
+            <div class="fw-semibold">בחר סוג אילוץ</div>
+            <div class="text-muted small">
+              <strong>כל היום</strong> – אינך זמין לאף משמרת ביום זה.<br>
+              <strong>משמרת ספציפית</strong> – בחר איזו משמרת בדיוק חסומה.
+            </div>
+          </div>
+        </li>
+        <li class="list-group-item d-flex gap-3">
+          <div>
+            <div class="fw-semibold">הוסף הערה (אופציונלי)</div>
+            <div class="text-muted small">ניתן לציין סיבה – מחלה, אירוע משפחתי וכד'.</div>
+          </div>
+        </li>
+        <li class="list-group-item d-flex gap-3">
+          <div>
+            <div class="fw-semibold">לחץ "שמור שינויים"</div>
+            <div class="text-muted small">השינויים נשמרים במסד הנתונים ויילקחו בחשבון בייצור הסידור הבא.</div>
+          </div>
+        </li>
+      </ol>
+
+      <div class="alert alert-info d-flex gap-2">
+        <i class="bi bi-lightbulb-fill fs-5 flex-shrink-0"></i>
+        <div>
+          <strong>ביטול אילוץ:</strong> לחץ שוב על יום/משמרת שמסומנים – הם יחזרו למצב פנוי.
+          ניתן גם לבטל אילוץ מרשימת האילוצים הפעילים שמוצגת מתחת ללוח השנה.
+        </div>
+      </div>
+
+      <div class="alert alert-warning d-flex gap-2">
+        <i class="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0"></i>
+        <div>
+          <strong>שים לב:</strong> הגשת אילוץ אינה ערובה לכך שלא תשובץ. המנהל שומר על סמכות
+          לשבץ גם בניגוד לאילוץ במקרי הצורך – שיבוץ כזה יסומן באדום בסידור.
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== SCHEDULE VIEW ========== -->
+    <section id="section-schedule-view" class="mb-5">
+      <h4 class="fw-bold text-primary border-bottom pb-2">
+        <i class="bi bi-table me-2"></i>צפייה בסידור
+      </h4>
+      <p>לאחר שהמנהל מייצר ומפרסם סידור, תקבל קישור ישיר לצפייה בו.</p>
+      <ul class="list-unstyled">
+        <li class="mb-2"><i class="bi bi-arrow-left-short text-primary"></i> הסידור מוצג לפי <strong>תאריך → מתקן → משמרת</strong></li>
+        <li class="mb-2"><i class="bi bi-arrow-left-short text-primary"></i> מפקד המשמרת מסומן ב-<span class="text-warning">⭐</span></li>
+        <li class="mb-2"><i class="bi bi-arrow-left-short text-primary"></i> ניתן לנווט בין תאריכים בחלק העליון של הסידור</li>
+        <li class="mb-2"><i class="bi bi-arrow-left-short text-primary"></i> לחץ על שם אדם לצפייה בתפקידו</li>
+      </ul>
+    </section>
+
+    <!-- ========== COLOR LEGEND ========== -->
+    <section id="section-colors" class="mb-5">
+      <h4 class="fw-bold text-primary border-bottom pb-2">
+        <i class="bi bi-palette me-2"></i>מפתח צבעים
+      </h4>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="card border-success">
+            <div class="card-body text-center">
+              <i class="bi bi-check-circle-fill text-success fs-2 mb-2"></i>
+              <h6 class="fw-bold text-success">ירוק – תקין</h6>
+              <small class="text-muted">שיבוץ תואם לכל האילוצים והמגבלות</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card border-warning">
+            <div class="card-body text-center">
+              <i class="bi bi-exclamation-circle-fill text-warning fs-2 mb-2"></i>
+              <h6 class="fw-bold text-warning">צהוב – חריגת מכסה</h6>
+              <small class="text-muted">חרג ממגבלת המשמרות המקסימלית לתקופה</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card border-danger">
+            <div class="card-body text-center">
+              <i class="bi bi-x-circle-fill text-danger fs-2 mb-2"></i>
+              <h6 class="fw-bold text-danger">אדום – הפרת אילוץ</h6>
+              <small class="text-muted">שובץ למרות אילוץ זמינות פעיל</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== FAQ ========== -->
+    <section id="section-faq" class="mb-5">
+      <h4 class="fw-bold text-primary border-bottom pb-2">
+        <i class="bi bi-question-circle me-2"></i>שאלות נפוצות
+      </h4>
+      <div class="accordion" id="faqAccordion">
+
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+              איך מגישים אילוץ על משמרת ספציפית?
+            </button>
+          </h2>
+          <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body text-muted">
+              בחר את שמך, לחץ על היום הרצוי בלוח השנה, ובחר "משמרת ספציפית".
+              לאחר מכן בחר מהרשימה את שם המשמרת (בוקר/צהריים/לילה) ולחץ שמור.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+              האם ניתן לשנות אילוץ לאחר שמירה?
+            </button>
+          </h2>
+          <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body text-muted">
+              כן. בחר מחדש את שמך, לחץ על האילוץ ברשימה או על היום בלוח השנה, ולחץ שוב כדי לבטל אותו.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+              מה קורה אם שוכחתי להגיש אילוץ?
+            </button>
+          </h2>
+          <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body text-muted">
+              פנה למנהל – הוא יכול לערוך את הסידור ידנית ולהסיר אותך משיבוץ שנוצר בטעות.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+              מה המשמעות של כוכב ⭐ ליד שם?
+            </button>
+          </h2>
+          <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body text-muted">
+              הכוכב מציין את מפקד המשמרת – האחראי על אותה משמרת ספציפית.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Back link -->
+    <div class="text-center mb-4">
+      <a href="/" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-right me-1"></i>חזרה לדף הגשת אילוצים
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<%- include('partials/footer') %>

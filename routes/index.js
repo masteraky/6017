@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { Personnel, Roles, Shifts, Constraints } = require('../models/db');
 
+// Instructions page (public)
+router.get('/instructions', (req, res) => {
+  res.render('instructions', { title: 'הוראות שימוש - יחידה 6017' });
+});
+
 // Home - Constraints input page
 router.get('/', async (req, res) => {
   try {

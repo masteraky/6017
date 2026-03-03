@@ -73,6 +73,11 @@
           <i class="bi bi-sliders me-1"></i>הגדרות
         </a>
       </li>
+      <li class="nav-item">
+        <a class="nav-link <%= tab==='guide'?'active':'' %>" href="/admin?tab=guide">
+          <i class="bi bi-book me-1"></i>מדריך מנהל
+        </a>
+      </li>
     </ul>
 
     <!-- ========== DASHBOARD ========== -->
@@ -778,6 +783,176 @@ async function deleteRequirement(shiftId, roleId) {
   } catch(e) { alert('שגיאת רשת'); }
 }
 
+// Guide tab search (placeholder, no JS needed)
+</script>
+
+<!-- ========== ADMIN GUIDE TAB ========== -->
+<div class="tab-content-custom <%= tab==='guide'?'':'d-none' %>">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+
+      <h4 class="fw-bold text-primary border-bottom pb-2 mb-4">
+        <i class="bi bi-book me-2"></i>מדריך למנהל המערכת
+      </h4>
+
+      <!-- Setup -->
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white fw-semibold">
+          <i class="bi bi-gear-fill me-2"></i>הגדרת המערכת (הכנה ראשונית)
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="d-flex gap-2 mb-3">
+                <span class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width:28px;height:28px;flex-shrink:0">1</span>
+                <div>
+                  <div class="fw-semibold">תפקידים</div>
+                  <div class="text-muted small">הגדר את התפקידים ביחידה. סמן "יכול לשמש כמפקד משמרת" לתפקידים בכירים.</div>
+                </div>
+              </div>
+              <div class="d-flex gap-2 mb-3">
+                <span class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width:28px;height:28px;flex-shrink:0">2</span>
+                <div>
+                  <div class="fw-semibold">אנשי צוות</div>
+                  <div class="text-muted small">הוסף את שמות אנשי הצוות ושייך לכל אחד תפקיד.</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="d-flex gap-2 mb-3">
+                <span class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width:28px;height:28px;flex-shrink:0">3</span>
+                <div>
+                  <div class="fw-semibold">מתקנים</div>
+                  <div class="text-muted small">הוסף את המתקנים שאנשי הצוות משובצים אליהם.</div>
+                </div>
+              </div>
+              <div class="d-flex gap-2 mb-3">
+                <span class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width:28px;height:28px;flex-shrink:0">4</span>
+                <div>
+                  <div class="fw-semibold">משמרות ודרישות</div>
+                  <div class="text-muted small">הגדר משמרות (שם + שעות). לכל משמרת, קבע כמה אנשים מכל תפקיד נדרשים.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Max shifts -->
+      <div class="card mb-4">
+        <div class="card-header bg-warning text-dark fw-semibold">
+          <i class="bi bi-bar-chart-line me-2"></i>מגבלות משמרות
+        </div>
+        <div class="card-body">
+          <p class="text-muted small mb-3">הגדר מקסימום משמרות לבעל תפקיד בתקופה נתונה, כדי למנוע עומס יתר.</p>
+          <ol class="mb-3">
+            <li>עבור ללשונית <strong>"מגבלות משמרות"</strong></li>
+            <li>בחר תפקיד (ולאו דווקא אדם ספציפי) – הכלל יחול על כל בעלי התפקיד</li>
+            <li>הזן מספר מקסימלי של משמרות</li>
+            <li>בחר תקופה: <strong>שבוע / חודש / שנה</strong></li>
+          </ol>
+          <div class="alert alert-warning py-2 mb-0 small">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            <strong>חריגה:</strong> שיבוץ מעבר למגבלה <em>מותר</em> אך מסומן <span class="badge bg-warning text-dark">צהוב</span> בסידור.
+          </div>
+        </div>
+      </div>
+
+      <!-- Generate -->
+      <div class="card mb-4">
+        <div class="card-header bg-success text-white fw-semibold">
+          <i class="bi bi-cpu me-2"></i>ייצור סידור אוטומטי
+        </div>
+        <div class="card-body">
+          <ol class="mb-3">
+            <li>עבור ללשונית <strong>"סידור עבודה"</strong></li>
+            <li>תן שם לסידור (לדוגמה: "אפריל 2026")</li>
+            <li>בחר תאריכי התחלה וסיום</li>
+            <li>לחץ <strong>"צור סידור אוטומטי"</strong></li>
+          </ol>
+          <p class="text-muted small mb-0">
+            האלגוריתם מבצע שיבוצים לפי עדיפות: תחילה אנשים שאין להם אילוץ ובתוך מגבלת המקסימום,
+            לאחר מכן אנשים מעל המגבלה כחלופה, ומבחר את המפקד מבין הזכאים עם הכי פחות שעות.
+          </p>
+        </div>
+      </div>
+
+      <!-- Manual edit -->
+      <div class="card mb-4">
+        <div class="card-header bg-info text-white fw-semibold">
+          <i class="bi bi-pencil-square me-2"></i>עריכה ידנית של הסידור
+        </div>
+        <div class="card-body">
+          <ol class="mb-3">
+            <li>פתח סידור קיים מלשונית "סידור עבודה"</li>
+            <li>לחץ <strong>"מצב עריכה"</strong> בפינה הימנית עליונה</li>
+            <li>
+              ניתן:
+              <ul class="mt-1">
+                <li>לחץ <code>+</code> להוספת אדם לתא משמרת</li>
+                <li>לחץ <code>✕</code> להסרת שיבוץ</li>
+                <li>לחץ ⭐ לשינוי מפקד</li>
+              </ul>
+            </li>
+          </ol>
+          <div class="alert alert-danger py-2 mb-0 small">
+            <i class="bi bi-x-circle me-1"></i>
+            שיבוץ בניגוד לאילוץ שהוגש מסומן <span class="badge bg-danger">אדום</span> – מותר, אך גלוי לכולם.
+          </div>
+        </div>
+      </div>
+
+      <!-- Color legend -->
+      <div class="card mb-4">
+        <div class="card-header bg-secondary text-white fw-semibold">
+          <i class="bi bi-palette me-2"></i>מפתח צבעים
+        </div>
+        <div class="card-body">
+          <div class="row g-2 text-center">
+            <div class="col-md-4">
+              <div class="p-2 rounded border border-success bg-success bg-opacity-10">
+                <i class="bi bi-check-circle-fill text-success"></i>
+                <div class="fw-semibold small mt-1">ירוק – תקין</div>
+                <div class="text-muted" style="font-size:.75rem">ללא אילוצים, בתוך מגבלה</div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="p-2 rounded border border-warning bg-warning bg-opacity-10">
+                <i class="bi bi-exclamation-circle-fill text-warning"></i>
+                <div class="fw-semibold small mt-1">צהוב – חריגת מכסה</div>
+                <div class="text-muted" style="font-size:.75rem">מעל מגבלת המשמרות</div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="p-2 rounded border border-danger bg-danger bg-opacity-10">
+                <i class="bi bi-x-circle-fill text-danger"></i>
+                <div class="fw-semibold small mt-1">אדום – הפרת אילוץ</div>
+                <div class="text-muted" style="font-size:.75rem">שובץ בניגוד לאילוץ פעיל</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="card mb-4">
+        <div class="card-header bg-dark text-white fw-semibold">
+          <i class="bi bi-shield-lock me-2"></i>הגדרות ואבטחה
+        </div>
+        <div class="card-body">
+          <ul class="mb-0">
+            <li>שינוי סיסמת מנהל – בלשונית <strong>"הגדרות"</strong></li>
+            <li>שם האפליקציה ניתן לשינוי מאותה לשונית</li>
+            <li>לא לשתף את הסיסמה – כניסת מנהל מאפשרת שינוי ומחיקה של כל הנתונים</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
 // Personnel search filter
 document.getElementById('personnelSearch')?.addEventListener('input', function() {
   const q = this.value.toLowerCase();
