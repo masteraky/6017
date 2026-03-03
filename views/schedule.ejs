@@ -1,0 +1,516 @@
+<%- include('partials/header') %>
+
+<div class="row">
+  <div class="col-12">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <div>
+        <h2 class="fw-bold text-primary mb-1">
+          <i class="bi bi-calendar-week me-2"></i><%= period.name %>
+        </h2>
+        <span class="text-muted">
+          <%= new Date(period.start_date).toLocaleDateString('he-IL') %> –
+          <%= new Date(period.end_date).toLocaleDateString('he-IL') %>
+        </span>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <button onclick="window.print()" class="btn btn-outline-secondary">
+          <i class="bi bi-printer me-1"></i>הדפסה
+        </button>
+        <% if (locals.isAdminLoggedIn) { %>
+        <button id="toggleEditBtn" class="btn btn-warning" onclick="toggleEditMode()">
+          <i class="bi bi-pencil-square me-1"></i>מצב עריכה
+        </button>
+        <a href="/admin?tab=schedule" class="btn btn-outline-primary">
+          <i class="bi bi-arrow-right me-1"></i>חזרה לניהול
+        </a>
+        <% } else { %>
+        <a href="/" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-right me-1"></i>דף ראשי
+        </a>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Edit mode banner -->
+    <div id="editModeBanner" class="alert alert-warning d-none mb-3">
+      <div class="d-flex align-items-center gap-3 flex-wrap">
+        <i class="bi bi-pencil-square fs-4"></i>
+        <div>
+          <strong>מצב עריכה פעיל</strong> – ניתן להוסיף / להסיר עובדים ולשנות מפקד.
+          <br>
+          <small>שיבוץ הנוגד אילוצים יסומן <span class="badge bg-danger">באדום</span> אך יישמר.</small>
+        </div>
+        <button class="btn btn-sm btn-outline-dark ms-auto" onclick="toggleEditMode()">
+          <i class="bi bi-x-circle me-1"></i>סיים עריכה
+        </button>
+      </div>
+    </div>
+
+    <!-- Workload stats -->
+    <% if (stats && stats.length > 0) { %>
+    <div class="card mb-4">
+      <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i>עומס עבודה לפי עובד</h6>
+        <button class="btn btn-sm btn-link" data-bs-toggle="collapse" data-bs-target="#statsCollapse">הצג/הסתר</button>
+      </div>
+      <div class="collapse" id="statsCollapse">
+        <div class="card-body">
+          <div class="row g-2">
+          <% stats.forEach(s => { %>
+            <div class="col-md-3 col-6">
+              <div class="d-flex align-items-center gap-2 p-2 border rounded">
+                <div class="flex-grow-1">
+                  <div class="fw-semibold small"><%= s.name %></div>
+                  <div class="text-muted" style="font-size:0.75rem"><%= s.role_name %></div>
+                </div>
+                <span class="badge bg-primary rounded-pill fs-6"><%= s.shift_count %></span>
+              </div>
+            </div>
+          <% }); %>
+          </div>
+        </div>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Color legend -->
+    <div class="color-legend mb-3">
+      <strong class="small me-1">מקרא:</strong>
+      <span class="legend-item"><span class="legend-swatch swatch-clean"></span>שיבוץ תקין</span>
+      <span class="legend-item"><span class="legend-swatch swatch-yellow"></span>חורג ממגבלת משמרות</span>
+      <span class="legend-item"><span class="legend-swatch swatch-red"></span>נוגד אילוץ</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:#fff3cd;border:2px solid #ffc107;"></span>מפקד משמרת (ללא הפרה)</span>
+    </div>
+
+    <% if (Object.keys(grouped).length === 0) { %>
+    <div class="alert alert-info text-center">
+      <i class="bi bi-info-circle fs-1 d-block mb-2"></i>הסידור ריק - לא נמצאו שיבוצים
+    </div>
+    <% } %>
+
+    <% Object.keys(grouped).sort().forEach(dateStr => { %>
+    <% const dateObj = new Date(dateStr + 'T00:00:00'); %>
+    <% const dayNames = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת']; %>
+    <% const dayName = dayNames[dateObj.getDay()]; %>
+    <% const isWeekend = dateObj.getDay() === 5 || dateObj.getDay() === 6; %>
+
+    <div class="card mb-3 schedule-day-card <%= isWeekend ? 'border-warning' : '' %>">
+      <div class="card-header d-flex align-items-center gap-3 <%= isWeekend ? 'bg-warning bg-opacity-25' : 'bg-primary bg-opacity-10' %>">
+        <div class="fw-bold fs-5 text-primary">יום <%= dayName %></div>
+        <div class="text-muted">
+          <%= dateObj.toLocaleDateString('he-IL', {day:'2-digit',month:'2-digit',year:'numeric'}) %>
+        </div>
+        <% if (isWeekend) { %><span class="badge bg-warning text-dark">סוף שבוע</span><% } %>
+      </div>
+      <div class="card-body p-2">
+        <% Object.keys(grouped[dateStr]).forEach(facilityName => { %>
+        <% const facilityData = grouped[dateStr][facilityName]; %>
+        <div class="mb-2">
+          <div class="fw-semibold text-info mb-2"><i class="bi bi-building me-1"></i><%= facilityName %></div>
+          <div class="row g-2">
+          <% Object.keys(facilityData).forEach(shiftName => { %>
+          <% const shiftData = facilityData[shiftName]; %>
+          <% const fp = shiftData.people[0]; %>
+          <div class="col-md-4">
+            <div class="card h-100 shift-card"
+                 data-date="<%= dateStr %>"
+                 data-shift-id="<%= fp ? fp.shift_id : '' %>"
+                 data-shift-name="<%= shiftName %>"
+                 data-facility-id="<%= fp ? fp.facility_id : '' %>"
+                 data-facility-name="<%= facilityName %>">
+              <div class="card-header py-2 bg-dark text-white d-flex justify-content-between align-items-center">
+                <strong class="small"><%= shiftName %></strong>
+                <% if (shiftData.shift_info.start_time) { %>
+                <small class="text-white-50"><%= shiftData.shift_info.start_time %>–<%= shiftData.shift_info.end_time %></small>
+                <% } %>
+              </div>
+              <ul class="list-group list-group-flush assignment-list">
+              <% shiftData.people.forEach(person => { %>
+                <li class="list-group-item py-1 px-2 assignment-item <%= person.is_commander ? 'list-group-item-warning' : '' %>"
+                    data-assignment-id="<%= person.id %>"
+                    data-personnel-id="<%= person.personnel_id %>">
+                  <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-<%= person.is_commander ? 'star-fill text-warning' : 'person text-secondary' %>"></i>
+                    <div class="flex-grow-1">
+                      <div class="fw-semibold small"><%= person.personnel_name %></div>
+                      <div class="text-muted" style="font-size:0.7rem"><%= person.role_name %></div>
+                    </div>
+                    <% if (person.is_commander) { %>
+                    <span class="badge bg-warning text-dark commander-badge" style="font-size:0.65rem">מפקד</span>
+                    <% } %>
+                    <div class="edit-controls d-none gap-1">
+                      <button class="btn btn-xs btn-outline-warning p-0 px-1" title="שנה מפקד"
+                              onclick="toggleCommander(<%= person.id %>, this)">
+                        <i class="bi bi-star<%= person.is_commander ? '-fill' : '' %>"></i>
+                      </button>
+                      <button class="btn btn-xs btn-outline-danger p-0 px-1" title="הסר שיבוץ"
+                              onclick="removeAssignment(<%= person.id %>, this)">
+                        <i class="bi bi-x"></i>
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              <% }); %>
+              </ul>
+              <div class="card-footer p-1 add-person-area d-none">
+                <button class="btn btn-sm btn-outline-success w-100"
+                        onclick="openAddPersonModal(this.closest('.shift-card'))">
+                  <i class="bi bi-person-plus me-1"></i>הוסף עובד
+                </button>
+              </div>
+            </div>
+          </div>
+          <% }); %>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+    </div>
+    <% }); %>
+  </div>
+</div>
+
+<!-- Add Person Modal -->
+<div class="modal fade" id="addPersonModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>הוספת עובד למשמרת</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small mb-3" id="modalShiftInfo"></p>
+        <div class="mb-3">
+          <label class="form-label fw-bold">בחר עובד</label>
+          <select id="addPersonSelect" class="form-select">
+            <option value="">-- בחר --</option>
+          </select>
+        </div>
+        <div class="form-check mb-2">
+          <input type="checkbox" class="form-check-input" id="addPersonCommander">
+          <label class="form-check-label" for="addPersonCommander">
+            <i class="bi bi-star-fill text-warning me-1"></i>שבץ כמפקד משמרת
+          </label>
+        </div>
+        <div id="constraintWarning" class="alert alert-danger d-none">
+          <i class="bi bi-x-circle me-2"></i>
+          <strong>אילוץ!</strong> לעובד זה יש אילוץ לתאריך/משמרת זו.
+          השיבוץ יסומן <strong>באדום</strong> אך יישמר.
+        </div>
+        <div id="maxShiftsWarning" class="alert alert-warning d-none">
+          <i class="bi bi-exclamation-circle me-2"></i>
+          <strong>מגבלת משמרות!</strong> עובד זה חרג ממכסת המשמרות שלו.
+          השיבוץ יסומן <strong>בצהוב</strong> אך יישמר.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ביטול</button>
+        <button type="button" class="btn btn-success" onclick="confirmAddPerson()">
+          <i class="bi bi-check-circle me-1"></i>הוסף
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PERIOD_ID = <%= period.id %>;
+const IS_ADMIN = <%- locals.isAdminLoggedIn ? 'true' : 'false' %>;
+let editMode = false;
+let currentShiftCard = null;
+let addPersonModal = null;
+let allPersonnelCache = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (typeof bootstrap !== 'undefined') {
+    addPersonModal = new bootstrap.Modal(document.getElementById('addPersonModal'));
+  }
+  if (IS_ADMIN) await checkConstraintViolations();
+});
+
+async function checkConstraintViolations() {
+  const items = document.querySelectorAll('.assignment-item[data-personnel-id]');
+  // Batch: deduplicate by personnelId+date+shiftId
+  const checks = new Map();
+  items.forEach(item => {
+    const pid = item.dataset.personnelId;
+    const card = item.closest('.shift-card');
+    const date = card?.dataset.date;
+    const shiftId = card?.dataset.shiftId;
+    if (!pid || !date || !shiftId) return;
+    const key = `${pid}_${date}_${shiftId}`;
+    if (!checks.has(key)) checks.set(key, { pid, date, shiftId, items: [] });
+    checks.get(key).items.push(item);
+  });
+
+  for (const [key, { pid, date, shiftId, items: relItems }] of checks) {
+    try {
+      const r = await fetch(`/api/check-constraint?personnel_id=${pid}&date=${date}&shift_id=${shiftId}`);
+      const data = await r.json();
+      relItems.forEach(item => applyViolationStyle(item, data));
+    } catch(e) {}
+  }
+}
+
+function applyViolationStyle(item, data) {
+  // Priority: constraint violation (red) > over max shifts (yellow) > clean (green)
+  item.classList.remove('constraint-violation', 'over-max-shifts', 'assignment-clean');
+  item.querySelector('.violation-icon')?.remove();
+
+  if (data.hasConstraint) {
+    item.classList.add('constraint-violation');
+    addViolationIcon(item, 'bi-x-circle-fill text-danger', 'שיבוץ הנוגד אילוץ');
+  } else if (data.overMaxShifts) {
+    item.classList.remove('list-group-item-warning'); // don't mix with commander yellow
+    item.classList.add('over-max-shifts');
+    const info = data.maxShiftsInfo;
+    const tip = `עובר מגבלת משמרות (${info?.current || '?'}/${info?.max || '?'} ב${info?.periodType === 'week' ? 'שבוע' : info?.periodType === 'month' ? 'חודש' : 'שנה'})`;
+    addViolationIcon(item, 'bi-exclamation-circle-fill text-warning', tip);
+  } else {
+    item.classList.add('assignment-clean');
+  }
+}
+
+function addViolationIcon(item, iconClass, title) {
+  if (item.querySelector('.violation-icon')) return;
+  const icon = document.createElement('i');
+  icon.className = `bi ${iconClass} violation-icon ms-1`;
+  icon.title = title;
+  item.querySelector('.fw-semibold')?.appendChild(icon);
+}
+
+function markConstraintViolation(item, violated) {
+  applyViolationStyle(item, { hasConstraint: violated, overMaxShifts: false });
+}
+
+function toggleEditMode() {
+  editMode = !editMode;
+  const btn = document.getElementById('toggleEditBtn');
+  const banner = document.getElementById('editModeBanner');
+  if (editMode) {
+    btn.className = 'btn btn-danger';
+    btn.innerHTML = '<i class="bi bi-x-circle me-1"></i>סיים עריכה';
+    banner.classList.remove('d-none');
+    document.querySelectorAll('.edit-controls').forEach(el => { el.classList.remove('d-none'); el.classList.add('d-flex'); });
+    document.querySelectorAll('.add-person-area').forEach(el => el.classList.remove('d-none'));
+  } else {
+    btn.className = 'btn btn-warning';
+    btn.innerHTML = '<i class="bi bi-pencil-square me-1"></i>מצב עריכה';
+    banner.classList.add('d-none');
+    document.querySelectorAll('.edit-controls').forEach(el => { el.classList.add('d-none'); el.classList.remove('d-flex'); });
+    document.querySelectorAll('.add-person-area').forEach(el => el.classList.add('d-none'));
+  }
+}
+
+async function removeAssignment(assignmentId, btn) {
+  if (!confirm('להסיר שיבוץ זה?')) return;
+  try {
+    const r = await fetch(`/api/schedule/assignment/${assignmentId}`, { method: 'DELETE' });
+    const data = await r.json();
+    if (data.success) {
+      btn.closest('.assignment-item').remove();
+      showToast('שיבוץ הוסר', 'success');
+    } else showToast('שגיאה: ' + data.error, 'danger');
+  } catch(e) { showToast('שגיאת רשת', 'danger'); }
+}
+
+async function toggleCommander(assignmentId, btn) {
+  const item = btn.closest('.assignment-item');
+  const isNowCommander = btn.querySelector('i').className.includes('fill');
+  const newVal = !isNowCommander;
+  try {
+    const r = await fetch(`/api/schedule/assignment/${assignmentId}/commander`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ is_commander: newVal })
+    });
+    const data = await r.json();
+    if (data.success) {
+      if (newVal) {
+        if (!item.classList.contains('constraint-violation')) item.classList.add('list-group-item-warning');
+        item.querySelector('.fw-semibold').insertAdjacentHTML('afterend',
+          '<span class="badge bg-warning text-dark commander-badge ms-1" style="font-size:0.65rem">מפקד</span>');
+        btn.querySelector('i').className = 'bi bi-star-fill';
+      } else {
+        item.classList.remove('list-group-item-warning');
+        item.querySelector('.commander-badge')?.remove();
+        btn.querySelector('i').className = 'bi bi-star';
+      }
+      showToast(newVal ? 'סומן כמפקד' : 'הוסר ממפקד', 'success');
+    } else showToast('שגיאה: ' + data.error, 'danger');
+  } catch(e) { showToast('שגיאת רשת', 'danger'); }
+}
+
+async function openAddPersonModal(shiftCard) {
+  currentShiftCard = shiftCard;
+  const date = shiftCard.dataset.date;
+  const shiftId = shiftCard.dataset.shiftId;
+  const facilityName = shiftCard.dataset.facilityName;
+  const shiftName = shiftCard.dataset.shiftName;
+
+  document.getElementById('modalShiftInfo').textContent =
+    `${facilityName} | ${shiftName} | ${new Date(date+'T00:00:00').toLocaleDateString('he-IL')}`;
+  document.getElementById('constraintWarning').classList.add('d-none');
+  document.getElementById('addPersonCommander').checked = false;
+
+  const assignedIds = new Set(
+    Array.from(shiftCard.querySelectorAll('.assignment-item')).map(el => el.dataset.personnelId)
+  );
+
+  try {
+    if (!allPersonnelCache) {
+      const r = await fetch(`/api/schedule/${PERIOD_ID}/edit-data`);
+      const data = await r.json();
+      allPersonnelCache = data.allPersonnel || [];
+    }
+    const select = document.getElementById('addPersonSelect');
+    select.innerHTML = '<option value="">-- בחר עובד --</option>';
+    const byRole = {};
+    allPersonnelCache.forEach(p => {
+      if (assignedIds.has(String(p.id))) return;
+      if (!byRole[p.role_name]) byRole[p.role_name] = [];
+      byRole[p.role_name].push(p);
+    });
+    Object.keys(byRole).sort().forEach(roleName => {
+      const og = document.createElement('optgroup');
+      og.label = roleName;
+      byRole[roleName].forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name;
+        og.appendChild(opt);
+      });
+      select.appendChild(og);
+    });
+    select.onchange = async () => {
+      const pid = select.value;
+      document.getElementById('constraintWarning').classList.add('d-none');
+      document.getElementById('maxShiftsWarning').classList.add('d-none');
+      if (!pid) return;
+      try {
+        const r2 = await fetch(`/api/check-constraint?personnel_id=${pid}&date=${date}&shift_id=${shiftId}`);
+        const d2 = await r2.json();
+        document.getElementById('constraintWarning').classList.toggle('d-none', !d2.hasConstraint);
+        document.getElementById('maxShiftsWarning').classList.toggle('d-none', !d2.overMaxShifts);
+      } catch(e) {}
+    };
+  } catch(e) {}
+
+  addPersonModal?.show();
+}
+
+async function confirmAddPerson() {
+  const select = document.getElementById('addPersonSelect');
+  const personnelId = select.value;
+  if (!personnelId || !currentShiftCard) return;
+
+  const date = currentShiftCard.dataset.date;
+  const shiftId = currentShiftCard.dataset.shiftId;
+  const facilityId = currentShiftCard.dataset.facilityId;
+  const isCommander = document.getElementById('addPersonCommander').checked;
+
+  try {
+    const r = await fetch(`/api/schedule/${PERIOD_ID}/assignment/add`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ date, shift_id: shiftId, personnel_id: personnelId, facility_id: facilityId, is_commander: isCommander })
+    });
+    const data = await r.json();
+    if (!data.success) { showToast('שגיאה: ' + data.error, 'danger'); return; }
+
+    const selectedOpt = select.options[select.selectedIndex];
+    const personName = selectedOpt?.textContent || '';
+    const personRole = selectedOpt?.closest('optgroup')?.label || '';
+    const newId = data.newId || 0;
+
+    const li = document.createElement('li');
+    li.className = `list-group-item py-1 px-2 assignment-item ${isCommander && !data.hasConstraint ? 'list-group-item-warning' : ''}`;
+    li.dataset.personnelId = personnelId;
+    li.dataset.assignmentId = newId;
+    li.innerHTML = `
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-${isCommander?'star-fill text-warning':'person text-secondary'}"></i>
+        <div class="flex-grow-1">
+          <div class="fw-semibold small">${personName}</div>
+          <div class="text-muted" style="font-size:0.7rem">${personRole}</div>
+        </div>
+        ${isCommander ? '<span class="badge bg-warning text-dark commander-badge" style="font-size:0.65rem">מפקד</span>' : ''}
+        <div class="edit-controls d-flex gap-1">
+          <button class="btn btn-xs btn-outline-warning p-0 px-1" title="שנה מפקד"
+                  onclick="toggleCommander(${newId}, this)">
+            <i class="bi bi-star${isCommander?'-fill':''}"></i>
+          </button>
+          <button class="btn btn-xs btn-outline-danger p-0 px-1" title="הסר שיבוץ"
+                  onclick="removeAssignment(${newId}, this)">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>`;
+
+    applyViolationStyle(li, data);
+    currentShiftCard.querySelector('.assignment-list').appendChild(li);
+    addPersonModal?.hide();
+    let toastMsg, toastType;
+    if (data.hasConstraint) {
+      toastMsg = 'עובד נוסף - נוגד אילוץ (סומן באדום)';
+      toastType = 'danger';
+    } else if (data.overMaxShifts) {
+      toastMsg = 'עובד נוסף - חורג ממגבלת משמרות (סומן בצהוב)';
+      toastType = 'warning';
+    } else {
+      toastMsg = 'עובד נוסף בהצלחה';
+      toastType = 'success';
+    }
+    showToast(toastMsg, toastType);
+  } catch(e) { showToast('שגיאת רשת', 'danger'); }
+}
+
+function showToast(message, type='success') {
+  const el = document.getElementById('schedToast');
+  if (el) el.remove();
+  const colors = {success:'bg-success',danger:'bg-danger',warning:'bg-warning text-dark',info:'bg-info'};
+  const d = document.createElement('div');
+  d.id = 'schedToast';
+  d.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;min-width:250px;';
+  d.innerHTML = `<div class="toast show align-items-center text-white ${colors[type]||'bg-secondary'} border-0 shadow">
+    <div class="d-flex"><div class="toast-body fw-semibold">${message}</div>
+    <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.closest('#schedToast').remove()"></button>
+    </div></div>`;
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 4000);
+}
+</script>
+
+<style>
+.btn-xs { font-size:0.7rem; line-height:1.4; border-radius:3px; }
+
+/* Assignment color states */
+.constraint-violation {
+  background-color: #f8d7da !important;
+  border-color: #f5c2c7 !important;
+}
+.over-max-shifts {
+  background-color: #fff3cd !important;
+  border-color: #ffe69c !important;
+}
+.assignment-clean {
+  background-color: #d1e7dd !important;
+  border-color: #a3cfbb !important;
+}
+
+/* Legend */
+.color-legend { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-bottom: 0.75rem; }
+.legend-item { display: flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; }
+.legend-swatch { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(0,0,0,.15); }
+.swatch-clean { background: #d1e7dd; }
+.swatch-yellow { background: #fff3cd; }
+.swatch-red { background: #f8d7da; }
+
+@media print {
+  .edit-controls, #toggleEditBtn, #editModeBanner, .add-person-area,
+  .btn:not(.print-ok), .color-legend { display:none !important; }
+  .constraint-violation { background-color:#faa !important; -webkit-print-color-adjust:exact; }
+  .over-max-shifts { background-color:#ffd !important; -webkit-print-color-adjust:exact; }
+  .assignment-clean { background-color:#dfd !important; -webkit-print-color-adjust:exact; }
+}
+</style>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,790 @@
+<%- include('partials/header') %>
+
+<div class="row">
+  <div class="col-12">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="fw-bold text-primary mb-0">
+        <i class="bi bi-gear-fill me-2"></i>לוח בקרה מנהל
+      </h2>
+      <a href="/admin/logout" class="btn btn-outline-danger btn-sm">
+        <i class="bi bi-box-arrow-left me-1"></i>יציאה
+      </a>
+    </div>
+
+    <% if (success) { %>
+    <div class="alert alert-success alert-dismissible fade show">
+      <i class="bi bi-check-circle me-2"></i><%= success %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <% } %>
+    <% if (error) { %>
+    <div class="alert alert-danger alert-dismissible fade show">
+      <i class="bi bi-exclamation-circle me-2"></i><%= error %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <% } %>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-4" id="adminTabs">
+      <li class="nav-item">
+        <a class="nav-link <%= tab==='dashboard'?'active':'' %>" href="/admin?tab=dashboard">
+          <i class="bi bi-speedometer2 me-1"></i>סקירה
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <%= tab==='roles'?'active':'' %>" href="/admin?tab=roles">
+          <i class="bi bi-person-badge me-1"></i>תפקידים
+          <span class="badge bg-secondary ms-1"><%= roles.length %></span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <%= tab==='personnel'?'active':'' %>" href="/admin?tab=personnel">
+          <i class="bi bi-people-fill me-1"></i>אנשי צוות
+          <span class="badge bg-secondary ms-1"><%= personnel.length %></span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <%= tab==='facilities'?'active':'' %>" href="/admin?tab=facilities">
+          <i class="bi bi-building me-1"></i>מתקנים
+          <span class="badge bg-secondary ms-1"><%= facilities.length %></span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <%= tab==='shifts'?'active':'' %>" href="/admin?tab=shifts">
+          <i class="bi bi-clock me-1"></i>משמרות
+          <span class="badge bg-secondary ms-1"><%= shifts.length %></span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <%= tab==='maxshifts'?'active':'' %>" href="/admin?tab=maxshifts">
+          <i class="bi bi-bar-chart-line me-1"></i>מגבלות משמרות
+          <% if (maxShiftsRules && maxShiftsRules.length > 0) { %>
+          <span class="badge bg-warning text-dark ms-1"><%= maxShiftsRules.length %></span>
+          <% } %>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <%= tab==='schedule'?'active':'' %>" href="/admin?tab=schedule">
+          <i class="bi bi-calendar-week me-1"></i>סידור עבודה
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <%= tab==='settings'?'active':'' %>" href="/admin?tab=settings">
+          <i class="bi bi-sliders me-1"></i>הגדרות
+        </a>
+      </li>
+    </ul>
+
+    <!-- ========== DASHBOARD ========== -->
+    <div class="tab-content-custom <%= tab==='dashboard'?'':'d-none' %>">
+      <div class="row g-4">
+        <div class="col-md-3">
+          <div class="card border-primary h-100 text-center">
+            <div class="card-body">
+              <i class="bi bi-person-badge fs-1 text-primary"></i>
+              <h2 class="fw-bold mt-2"><%= roles.length %></h2>
+              <div class="text-muted">תפקידים</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card border-success h-100 text-center">
+            <div class="card-body">
+              <i class="bi bi-people-fill fs-1 text-success"></i>
+              <h2 class="fw-bold mt-2"><%= personnel.length %></h2>
+              <div class="text-muted">אנשי צוות</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card border-info h-100 text-center">
+            <div class="card-body">
+              <i class="bi bi-building fs-1 text-info"></i>
+              <h2 class="fw-bold mt-2"><%= facilities.length %></h2>
+              <div class="text-muted">מתקנים</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card border-warning h-100 text-center">
+            <div class="card-body">
+              <i class="bi bi-calendar-week fs-1 text-warning"></i>
+              <h2 class="fw-bold mt-2"><%= periods.length %></h2>
+              <div class="text-muted">סידורים שנוצרו</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <% if (periods.length > 0) { %>
+      <div class="card mt-4">
+        <div class="card-header"><h6 class="mb-0">סידורי עבודה אחרונים</h6></div>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light"><tr><th>שם</th><th>תחילה</th><th>סיום</th><th>פעולות</th></tr></thead>
+            <tbody>
+            <% periods.slice(0,5).forEach(p => { %>
+            <tr>
+              <td><%= p.name %></td>
+              <td><%= new Date(p.start_date).toLocaleDateString('he-IL') %></td>
+              <td><%= new Date(p.end_date).toLocaleDateString('he-IL') %></td>
+              <td>
+                <a href="/schedule/<%= p.id %>" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-eye me-1"></i>צפה
+                </a>
+              </td>
+            </tr>
+            <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <% } %>
+    </div>
+
+    <!-- ========== ROLES ========== -->
+    <div class="tab-content-custom <%= tab==='roles'?'':'d-none' %>">
+      <div class="row g-4">
+        <div class="col-md-5">
+          <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white"><h6 class="mb-0">הוספת תפקיד חדש</h6></div>
+            <div class="card-body">
+              <form action="/admin/roles" method="POST">
+                <div class="mb-3">
+                  <label class="form-label">שם התפקיד</label>
+                  <input type="text" name="name" class="form-control" required placeholder="למשל: רופא שיניים">
+                </div>
+                <div class="form-check mb-3">
+                  <input type="checkbox" class="form-check-input" name="is_commander_eligible" value="1" id="cmdEligible">
+                  <label class="form-check-label" for="cmdEligible">
+                    <i class="bi bi-star-fill text-warning me-1"></i>יכול לשמש כמפקד משמרת
+                  </label>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">
+                  <i class="bi bi-plus-circle me-2"></i>הוסף תפקיד
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-7">
+          <div class="card shadow-sm">
+            <div class="card-header bg-light"><h6 class="mb-0">רשימת תפקידים</h6></div>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr><th>שם</th><th>מפקד?</th><th>פעולות</th></tr>
+                </thead>
+                <tbody>
+                <% if (roles.length === 0) { %>
+                <tr><td colspan="3" class="text-center text-muted py-3">אין תפקידים</td></tr>
+                <% } %>
+                <% roles.forEach(r => { %>
+                <tr id="role-row-<%= r.id %>">
+                  <td>
+                    <span class="role-display-<%= r.id %>"><%= r.name %></span>
+                    <input type="text" class="form-control form-control-sm d-none role-edit-<%= r.id %>"
+                           value="<%= r.name %>">
+                  </td>
+                  <td>
+                    <% if (r.is_commander_eligible) { %>
+                    <span class="badge bg-warning text-dark"><i class="bi bi-star-fill me-1"></i>כן</span>
+                    <% } else { %>
+                    <span class="badge bg-secondary">לא</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <form action="/admin/roles/<%= r.id %>/delete" method="POST" class="d-inline"
+                          onsubmit="return confirm('למחוק תפקיד זה?')">
+                      <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                <% }); %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PERSONNEL ========== -->
+    <div class="tab-content-custom <%= tab==='personnel'?'':'d-none' %>">
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="card shadow-sm">
+            <div class="card-header bg-success text-white"><h6 class="mb-0">הוספת איש צוות</h6></div>
+            <div class="card-body">
+              <form action="/admin/personnel" method="POST">
+                <div class="mb-3">
+                  <label class="form-label">שם מלא</label>
+                  <input type="text" name="name" class="form-control" required placeholder="שם פרטי ומשפחה">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">תפקיד</label>
+                  <select name="role_id" class="form-select" required>
+                    <option value="">-- בחר תפקיד --</option>
+                    <% roles.forEach(r => { %>
+                    <option value="<%= r.id %>"><%= r.name %></option>
+                    <% }); %>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-success w-100">
+                  <i class="bi bi-person-plus me-2"></i>הוסף איש צוות
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-8">
+          <div class="card shadow-sm">
+            <div class="card-header bg-light">
+              <div class="d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">אנשי צוות (<%= personnel.length %>)</h6>
+                <input type="text" id="personnelSearch" class="form-control form-control-sm w-auto"
+                       placeholder="חיפוש...">
+              </div>
+            </div>
+            <div class="table-responsive" style="max-height:500px;overflow-y:auto;">
+              <table class="table table-hover table-sm mb-0" id="personnelTable">
+                <thead class="table-light sticky-top">
+                  <tr><th>שם</th><th>תפקיד</th><th>פעולות</th></tr>
+                </thead>
+                <tbody>
+                <% if (personnel.length === 0) { %>
+                <tr><td colspan="3" class="text-center text-muted py-3">אין אנשי צוות</td></tr>
+                <% } %>
+                <% personnel.forEach(p => { %>
+                <tr>
+                  <td><strong><%= p.name %></strong></td>
+                  <td>
+                    <span class="badge bg-primary"><%= p.role_name %></span>
+                    <% if (p.is_commander_eligible) { %>
+                    <span class="badge bg-warning text-dark ms-1"><i class="bi bi-star-fill"></i></span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <form action="/admin/personnel/<%= p.id %>/delete" method="POST" class="d-inline"
+                          onsubmit="return confirm('להסיר את <%= p.name %>?')">
+                      <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                <% }); %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== FACILITIES ========== -->
+    <div class="tab-content-custom <%= tab==='facilities'?'':'d-none' %>">
+      <div class="row g-4">
+        <div class="col-md-5">
+          <div class="card shadow-sm">
+            <div class="card-header bg-info text-white"><h6 class="mb-0">הוספת מתקן</h6></div>
+            <div class="card-body">
+              <form action="/admin/facilities" method="POST">
+                <div class="mb-3">
+                  <label class="form-label">שם המתקן</label>
+                  <input type="text" name="name" class="form-control" required placeholder="למשל: מתקן צפון">
+                </div>
+                <button type="submit" class="btn btn-info text-white w-100">
+                  <i class="bi bi-building-add me-2"></i>הוסף מתקן
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-7">
+          <div class="card shadow-sm">
+            <div class="card-header bg-light"><h6 class="mb-0">מתקנים פעילים</h6></div>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light"><tr><th>#</th><th>שם</th><th>פעולות</th></tr></thead>
+                <tbody>
+                <% if (facilities.length === 0) { %>
+                <tr><td colspan="3" class="text-center text-muted py-3">אין מתקנים</td></tr>
+                <% } %>
+                <% facilities.forEach((f, i) => { %>
+                <tr>
+                  <td><%= i+1 %></td>
+                  <td><%= f.name %></td>
+                  <td>
+                    <form action="/admin/facilities/<%= f.id %>/delete" method="POST" class="d-inline"
+                          onsubmit="return confirm('להסיר מתקן זה?')">
+                      <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                <% }); %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== SHIFTS ========== -->
+    <div class="tab-content-custom <%= tab==='shifts'?'':'d-none' %>">
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="card shadow-sm mb-3">
+            <div class="card-header bg-warning text-dark"><h6 class="mb-0">הוספת משמרת</h6></div>
+            <div class="card-body">
+              <form action="/admin/shifts" method="POST">
+                <div class="mb-2">
+                  <label class="form-label">שם המשמרת</label>
+                  <input type="text" name="name" class="form-control" required placeholder="למשל: משמרת בוקר">
+                </div>
+                <div class="row mb-2">
+                  <div class="col-6">
+                    <label class="form-label">שעת התחלה</label>
+                    <input type="time" name="start_time" class="form-control">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label">שעת סיום</label>
+                    <input type="time" name="end_time" class="form-control">
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">סדר</label>
+                  <input type="number" name="order_num" class="form-control" value="1" min="1">
+                </div>
+                <button type="submit" class="btn btn-warning text-dark w-100">
+                  <i class="bi bi-plus-circle me-2"></i>הוסף משמרת
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Shift Requirements -->
+          <div class="card shadow-sm">
+            <div class="card-header bg-light"><h6 class="mb-0">הגדרת דרישות משמרת</h6></div>
+            <div class="card-body">
+              <form id="requirementForm">
+                <div class="mb-2">
+                  <label class="form-label">משמרת</label>
+                  <select id="reqShiftId" class="form-select">
+                    <% shifts.forEach(s => { %>
+                    <option value="<%= s.id %>"><%= s.name %></option>
+                    <% }); %>
+                  </select>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label">תפקיד</label>
+                  <select id="reqRoleId" class="form-select">
+                    <% roles.forEach(r => { %>
+                    <option value="<%= r.id %>"><%= r.name %></option>
+                    <% }); %>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">כמות נדרשת</label>
+                  <input type="number" id="reqCount" class="form-control" value="1" min="0">
+                </div>
+                <button type="button" class="btn btn-primary w-100" onclick="saveRequirement()">
+                  <i class="bi bi-save me-2"></i>שמור דרישה
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-8">
+          <div class="card shadow-sm mb-3">
+            <div class="card-header bg-light"><h6 class="mb-0">משמרות מוגדרות</h6></div>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr><th>סדר</th><th>שם</th><th>שעות</th><th>פעולות</th></tr>
+                </thead>
+                <tbody>
+                <% if (shifts.length === 0) { %>
+                <tr><td colspan="4" class="text-center text-muted py-3">אין משמרות</td></tr>
+                <% } %>
+                <% shifts.forEach(s => { %>
+                <tr>
+                  <td><%= s.order_num %></td>
+                  <td><strong><%= s.name %></strong></td>
+                  <td>
+                    <% if (s.start_time) { %>
+                    <span class="badge bg-secondary"><%= s.start_time %> – <%= s.end_time %></span>
+                    <% } else { %>
+                    <span class="text-muted">—</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <form action="/admin/shifts/<%= s.id %>/delete" method="POST" class="d-inline"
+                          onsubmit="return confirm('למחוק משמרת זו?')">
+                      <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                <% }); %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card shadow-sm">
+            <div class="card-header bg-light"><h6 class="mb-0">דרישות כוח אדם למשמרות</h6></div>
+            <div class="table-responsive">
+              <table class="table table-sm mb-0">
+                <thead class="table-light">
+                  <tr><th>משמרת</th><th>תפקיד</th><th>כמות</th><th></th></tr>
+                </thead>
+                <tbody id="requirementsTable">
+                <% if (requirements.length === 0) { %>
+                <tr><td colspan="4" class="text-center text-muted py-3">לא הוגדרו דרישות</td></tr>
+                <% } %>
+                <% requirements.forEach(req => { %>
+                <tr id="req-<%= req.id %>">
+                  <td><%= req.shift_name %></td>
+                  <td><%= req.role_name %></td>
+                  <td><span class="badge bg-primary"><%= req.count %></span></td>
+                  <td>
+                    <button class="btn btn-sm btn-outline-danger"
+                            onclick="deleteRequirement(<%= req.shift_id %>, <%= req.role_id %>)">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                <% }); %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== SCHEDULE ========== -->
+    <div class="tab-content-custom <%= tab==='schedule'?'':'d-none' %>">
+      <div class="row g-4">
+        <div class="col-md-5">
+          <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+              <h6 class="mb-0"><i class="bi bi-magic me-2"></i>יצירת סידור עבודה</h6>
+            </div>
+            <div class="card-body">
+              <form action="/admin/schedule/generate" method="POST">
+                <div class="mb-3">
+                  <label class="form-label">שם הסידור</label>
+                  <input type="text" name="name" class="form-control" required
+                         placeholder='למשל: "מרץ 2025"'>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">תאריך התחלה</label>
+                  <input type="date" name="start_date" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">תאריך סיום</label>
+                  <input type="date" name="end_date" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">מתקנים לאיוש</label>
+                  <% if (facilities.length === 0) { %>
+                  <div class="alert alert-warning py-2">לא הוגדרו מתקנים</div>
+                  <% } else { %>
+                  <% facilities.forEach(f => { %>
+                  <div class="form-check">
+                    <input type="checkbox" class="form-check-input" name="facility_ids"
+                           value="<%= f.id %>" id="fac-<%= f.id %>" checked>
+                    <label class="form-check-label" for="fac-<%= f.id %>"><%= f.name %></label>
+                  </div>
+                  <% }); %>
+                  <% } %>
+                </div>
+                <button type="submit" class="btn btn-primary w-100"
+                        <% if (facilities.length===0||shifts.length===0||personnel.length===0) { %>disabled<% } %>>
+                  <i class="bi bi-cpu me-2"></i>צור סידור אוטומטי
+                </button>
+                <% if (facilities.length===0||shifts.length===0||personnel.length===0) { %>
+                <div class="form-text text-danger mt-2">
+                  נדרשים: מתקנים, משמרות ואנשי צוות כדי ליצור סידור
+                </div>
+                <% } %>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-7">
+          <div class="card shadow-sm">
+            <div class="card-header bg-light"><h6 class="mb-0">סידורים קיימים</h6></div>
+            <% if (periods.length === 0) { %>
+            <div class="card-body text-center text-muted py-4">
+              <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+              לא נוצרו סידורים עדיין
+            </div>
+            <% } else { %>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr><th>שם</th><th>תאריכים</th><th>נוצר</th><th>פעולות</th></tr>
+                </thead>
+                <tbody>
+                <% periods.forEach(p => { %>
+                <tr>
+                  <td><strong><%= p.name %></strong></td>
+                  <td class="small">
+                    <%= new Date(p.start_date).toLocaleDateString('he-IL') %> –
+                    <%= new Date(p.end_date).toLocaleDateString('he-IL') %>
+                  </td>
+                  <td class="small text-muted">
+                    <%= new Date(p.created_at).toLocaleDateString('he-IL') %>
+                  </td>
+                  <td>
+                    <a href="/schedule/<%= p.id %>" class="btn btn-sm btn-outline-primary me-1">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                    <form action="/admin/schedule/<%= p.id %>/delete" method="POST" class="d-inline"
+                          onsubmit="return confirm('למחוק סידור זה?')">
+                      <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                <% }); %>
+                </tbody>
+              </table>
+            </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== SETTINGS ========== -->
+    <div class="tab-content-custom <%= tab==='settings'?'':'d-none' %>">
+      <div class="col-md-6">
+        <div class="card shadow-sm">
+          <div class="card-header bg-secondary text-white"><h6 class="mb-0">הגדרות מערכת</h6></div>
+          <div class="card-body">
+            <form action="/admin/settings" method="POST">
+              <div class="mb-3">
+                <label class="form-label">שם האפליקציה</label>
+                <input type="text" name="app_name" class="form-control"
+                       value="<%= settings.app_name || 'מערכת סידור עבודה - יחידה 6017' %>">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">סיסמת מנהל חדשה</label>
+                <input type="password" name="admin_password" class="form-control"
+                       placeholder="השאר ריק לאי-שינוי">
+                <div class="form-text">הסיסמה הנוכחית: <code>unit6017</code> (ניתן לשינוי)</div>
+              </div>
+              <button type="submit" class="btn btn-secondary w-100">
+                <i class="bi bi-save me-2"></i>שמור הגדרות
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== MAX SHIFTS RULES ========== -->
+    <div class="tab-content-custom <%= tab==='maxshifts'?'':'d-none' %>">
+      <div class="row g-4">
+        <div class="col-md-5">
+          <div class="card shadow-sm">
+            <div class="card-header bg-warning text-dark">
+              <h6 class="mb-0"><i class="bi bi-bar-chart-line me-2"></i>הגדרת מגבלת משמרות</h6>
+            </div>
+            <div class="card-body">
+              <p class="small text-muted mb-3">
+                קבע מספר מקסימלי של משמרות לתפקיד או לאדם ספציפי בתקופה נבחרת.
+                שיבוץ מעבר לגבול יסומן <span class="badge bg-warning text-dark">בצהוב</span>.
+              </p>
+              <div class="mb-2">
+                <label class="form-label fw-bold">החל על תפקיד</label>
+                <select id="msRoleId" class="form-select">
+                  <option value="">-- כל התפקידים --</option>
+                  <% roles.forEach(r => { %>
+                  <option value="<%= r.id %>"><%= r.name %></option>
+                  <% }); %>
+                </select>
+              </div>
+              <div class="mb-2">
+                <label class="form-label fw-bold">או לאדם ספציפי (דורס חוק תפקיד)</label>
+                <select id="msPersonnelId" class="form-select">
+                  <option value="">-- לא ספציפי --</option>
+                  <% personnel.forEach(p => { %>
+                  <option value="<%= p.id %>"><%= p.name %> (<%= p.role_name %>)</option>
+                  <% }); %>
+                </select>
+              </div>
+              <div class="mb-2">
+                <label class="form-label fw-bold">מספר מקסימלי של משמרות</label>
+                <input type="number" id="msMaxShifts" class="form-control" value="5" min="1">
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">תקופת ספירה</label>
+                <select id="msPeriodType" class="form-select">
+                  <option value="week">שבוע (7 ימים)</option>
+                  <option value="month">חודש</option>
+                  <option value="year">שנה</option>
+                </select>
+              </div>
+              <button type="button" class="btn btn-warning text-dark w-100" onclick="saveMaxShiftsRule()">
+                <i class="bi bi-plus-circle me-2"></i>הוסף חוק
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-7">
+          <div class="card shadow-sm">
+            <div class="card-header bg-light"><h6 class="mb-0">חוקי מגבלות קיימים</h6></div>
+            <% if (!maxShiftsRules || maxShiftsRules.length === 0) { %>
+            <div class="card-body text-center text-muted py-4">
+              <i class="bi bi-bar-chart-line fs-1 d-block mb-2 opacity-25"></i>
+              לא הוגדרו מגבלות עדיין
+            </div>
+            <% } else { %>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr><th>חל על</th><th>מקסימום</th><th>תקופה</th><th></th></tr>
+                </thead>
+                <tbody>
+                <% maxShiftsRules.forEach(rule => { %>
+                <tr>
+                  <td>
+                    <% if (rule.personnel_name) { %>
+                    <i class="bi bi-person-fill text-success me-1"></i>
+                    <strong><%= rule.personnel_name %></strong>
+                    <span class="text-muted small">(<%= rule.role_name || '' %>)</span>
+                    <% } else if (rule.role_name) { %>
+                    <i class="bi bi-people-fill text-primary me-1"></i>
+                    כל <%= rule.role_name %>
+                    <% } else { %>
+                    <i class="bi bi-globe me-1"></i>כולם
+                    <% } %>
+                  </td>
+                  <td><span class="badge bg-primary"><%= rule.max_shifts %> משמרות</span></td>
+                  <td>
+                    <span class="badge bg-secondary">
+                      <%= rule.period_type === 'week' ? 'שבוע' : rule.period_type === 'month' ? 'חודש' : 'שנה' %>
+                    </span>
+                  </td>
+                  <td>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteMaxShiftsRule(<%= rule.id %>)">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                <% }); %>
+                </tbody>
+              </table>
+            </div>
+            <% } %>
+          </div>
+
+          <div class="card mt-3 border-info">
+            <div class="card-body py-2">
+              <h6 class="mb-2 text-info"><i class="bi bi-palette me-2"></i>מקרא צבעים בסידור</h6>
+              <div class="d-flex flex-wrap gap-3">
+                <span class="badge bg-success p-2">
+                  <i class="bi bi-check-circle me-1"></i>ירוק = שיבוץ תקין
+                </span>
+                <span class="badge bg-warning text-dark p-2">
+                  <i class="bi bi-exclamation-circle me-1"></i>צהוב = חורג ממגבלת משמרות
+                </span>
+                <span class="badge bg-danger p-2">
+                  <i class="bi bi-x-circle me-1"></i>אדום = נוגד אילוץ
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+async function saveMaxShiftsRule() {
+  const roleId = document.getElementById('msRoleId').value;
+  const personnelId = document.getElementById('msPersonnelId').value;
+  const maxShifts = document.getElementById('msMaxShifts').value;
+  const periodType = document.getElementById('msPeriodType').value;
+
+  if (!roleId && !personnelId) {
+    alert('נא לבחור תפקיד או אדם ספציפי');
+    return;
+  }
+  try {
+    const r = await fetch('/api/max-shifts-rules', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ role_id: roleId||null, personnel_id: personnelId||null, max_shifts: maxShifts, period_type: periodType })
+    });
+    const data = await r.json();
+    if (data.success) location.reload();
+    else alert('שגיאה: ' + data.error);
+  } catch(e) { alert('שגיאת רשת'); }
+}
+
+async function deleteMaxShiftsRule(id) {
+  if (!confirm('למחוק חוק זה?')) return;
+  try {
+    const r = await fetch(`/api/max-shifts-rules/${id}`, {method:'DELETE'});
+    const data = await r.json();
+    if (data.success) location.reload();
+    else alert('שגיאה: ' + data.error);
+  } catch(e) { alert('שגיאת רשת'); }
+}
+
+async function saveRequirement() {
+  const shiftId = document.getElementById('reqShiftId').value;
+  const roleId = document.getElementById('reqRoleId').value;
+  const count = document.getElementById('reqCount').value;
+  try {
+    const r = await fetch(`/admin/shifts/${shiftId}/requirements`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ role_id: roleId, count: count })
+    });
+    const data = await r.json();
+    if (data.success) {
+      location.reload();
+    } else {
+      alert('שגיאה: ' + data.error);
+    }
+  } catch(e) { alert('שגיאת רשת'); }
+}
+
+async function deleteRequirement(shiftId, roleId) {
+  if (!confirm('למחוק דרישה זו?')) return;
+  try {
+    const r = await fetch(`/admin/shifts/${shiftId}/requirements/${roleId}/delete`, {method:'POST'});
+    const data = await r.json();
+    if (data.success) location.reload();
+    else alert('שגיאה: ' + data.error);
+  } catch(e) { alert('שגיאת רשת'); }
+}
+
+// Personnel search filter
+document.getElementById('personnelSearch')?.addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('#personnelTable tbody tr').forEach(tr => {
+    tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+});
+</script>
+
+<%- include('partials/footer') %>

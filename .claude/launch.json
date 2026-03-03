@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Unit 6017 Scheduler",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["server.js"],
+      "port": 3000
+    }
+  ]
+}

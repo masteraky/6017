@@ -1,0 +1,26 @@
+{
+  "name": "unit-6017-scheduler",
+  "version": "1.0.0",
+  "description": "Work schedule management system for Unit 6017",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ejs": "^3.1.9",
+    "mssql": "^10.0.1",
+    "express-session": "^1.17.3",
+    "dotenv": "^16.3.1",
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.20.2",
+    "method-override": "^3.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

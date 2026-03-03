@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(node --version)",
+      "Bash(heroku --version)",
+      "Bash(\"/c/Program Files/heroku/bin/heroku\" --version)",
+      "Bash(\"/c/Program Files/heroku/bin/heroku\" auth:whoami)",
+      "Bash(\"/c/Program Files/heroku/bin/heroku\" apps:info scheduler2026)",
+      "Bash(git init)",
+      "Bash(git add -A)"
+    ]
+  }
+}
