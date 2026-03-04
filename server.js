@@ -67,18 +67,31 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server after DB init
+// Start server with DB retry logic
 async function startServer() {
-  try {
-    console.log('🔌 Connecting to database...');
-    await initializeDatabase();
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📋 Unit 6017 Scheduler ready at http://localhost:${PORT}`);
-    });
-  } catch (err) {
-    console.error('Failed to start server:', err.message);
-    process.exit(1);
+  const MAX_RETRIES = 5;
+  const RETRY_DELAY_MS = 5000;
+
+  // Start listening immediately so Heroku doesn't kill us for not binding a port
+  const server = app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+  });
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(`🔌 Connecting to database (attempt ${attempt}/${MAX_RETRIES})...`);
+      await initializeDatabase();
+      console.log(`✅ Database connected. Unit 6017 Scheduler ready at http://localhost:${PORT}`);
+      return;
+    } catch (err) {
+      console.error(`❌ DB connection attempt ${attempt} failed: ${err.message}`);
+      if (attempt < MAX_RETRIES) {
+        console.log(`⏳ Retrying in ${RETRY_DELAY_MS / 1000}s...`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+      } else {
+        console.error('💥 All DB connection attempts failed. Server running without DB.');
+      }
+    }
   }
 }
 
