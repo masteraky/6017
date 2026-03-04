@@ -238,6 +238,16 @@
                     <% }); %>
                   </select>
                 </div>
+                <div class="mb-3">
+                  <label class="form-label">מתקן מועדף <span class="text-muted small">(אופציונלי)</span></label>
+                  <select name="preferred_facility_id" class="form-select">
+                    <option value="">-- ללא העדפה --</option>
+                    <% facilities.forEach(f => { %>
+                    <option value="<%= f.id %>"><%= f.name %></option>
+                    <% }); %>
+                  </select>
+                  <div class="form-text">האלגוריתם יעדיף לשבץ אדם זה למתקן שנבחר</div>
+                </div>
                 <button type="submit" class="btn btn-success w-100">
                   <i class="bi bi-person-plus me-2"></i>הוסף איש צוות
                 </button>
@@ -257,11 +267,11 @@
             <div class="table-responsive" style="max-height:500px;overflow-y:auto;">
               <table class="table table-hover table-sm mb-0" id="personnelTable">
                 <thead class="table-light sticky-top">
-                  <tr><th>שם</th><th>תפקיד</th><th>פעולות</th></tr>
+                  <tr><th>שם</th><th>תפקיד</th><th>מתקן מועדף</th><th>פעולות</th></tr>
                 </thead>
                 <tbody>
                 <% if (personnel.length === 0) { %>
-                <tr><td colspan="3" class="text-center text-muted py-3">אין אנשי צוות</td></tr>
+                <tr><td colspan="4" class="text-center text-muted py-3">אין אנשי צוות</td></tr>
                 <% } %>
                 <% personnel.forEach(p => { %>
                 <tr>
@@ -270,6 +280,13 @@
                     <span class="badge bg-primary"><%= p.role_name %></span>
                     <% if (p.is_commander_eligible) { %>
                     <span class="badge bg-warning text-dark ms-1"><i class="bi bi-star-fill"></i></span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if (p.preferred_facility_name) { %>
+                    <span class="badge bg-info text-dark"><i class="bi bi-building me-1"></i><%= p.preferred_facility_name %></span>
+                    <% } else { %>
+                    <span class="text-muted small">—</span>
                     <% } %>
                   </td>
                   <td>
@@ -380,6 +397,15 @@
             <div class="card-body">
               <form id="requirementForm">
                 <div class="mb-2">
+                  <label class="form-label">מתקן <span class="text-muted small">(ריק = ברירת מחדל לכולם)</span></label>
+                  <select id="reqFacilityId" class="form-select">
+                    <option value="">-- ברירת מחדל (כל המתקנים) --</option>
+                    <% facilities.forEach(f => { %>
+                    <option value="<%= f.id %>"><%= f.name %></option>
+                    <% }); %>
+                  </select>
+                </div>
+                <div class="mb-2">
                   <label class="form-label">משמרת</label>
                   <select id="reqShiftId" class="form-select">
                     <% shifts.forEach(s => { %>
@@ -450,20 +476,27 @@
             <div class="table-responsive">
               <table class="table table-sm mb-0">
                 <thead class="table-light">
-                  <tr><th>משמרת</th><th>תפקיד</th><th>כמות</th><th></th></tr>
+                  <tr><th>מתקן</th><th>משמרת</th><th>תפקיד</th><th>כמות</th><th></th></tr>
                 </thead>
                 <tbody id="requirementsTable">
                 <% if (requirements.length === 0) { %>
-                <tr><td colspan="4" class="text-center text-muted py-3">לא הוגדרו דרישות</td></tr>
+                <tr><td colspan="5" class="text-center text-muted py-3">לא הוגדרו דרישות</td></tr>
                 <% } %>
                 <% requirements.forEach(req => { %>
                 <tr id="req-<%= req.id %>">
+                  <td>
+                    <% if (req.facility_name) { %>
+                    <span class="badge bg-info text-dark"><%= req.facility_name %></span>
+                    <% } else { %>
+                    <span class="badge bg-secondary">כל המתקנים</span>
+                    <% } %>
+                  </td>
                   <td><%= req.shift_name %></td>
                   <td><%= req.role_name %></td>
                   <td><span class="badge bg-primary"><%= req.count %></span></td>
                   <td>
                     <button class="btn btn-sm btn-outline-danger"
-                            onclick="deleteRequirement(<%= req.shift_id %>, <%= req.role_id %>)">
+                            onclick="deleteRequirement(<%= req.shift_id %>, <%= req.role_id %>, <%= req.facility_id != null ? req.facility_id : 'null' %>)">
                       <i class="bi bi-trash"></i>
                     </button>
                   </td>
@@ -759,11 +792,12 @@ async function saveRequirement() {
   const shiftId = document.getElementById('reqShiftId').value;
   const roleId = document.getElementById('reqRoleId').value;
   const count = document.getElementById('reqCount').value;
+  const facilityId = document.getElementById('reqFacilityId').value || null;
   try {
     const r = await fetch(`/admin/shifts/${shiftId}/requirements`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ role_id: roleId, count: count })
+      body: JSON.stringify({ role_id: roleId, count: count, facility_id: facilityId })
     });
     const data = await r.json();
     if (data.success) {
@@ -774,10 +808,14 @@ async function saveRequirement() {
   } catch(e) { alert('שגיאת רשת'); }
 }
 
-async function deleteRequirement(shiftId, roleId) {
+async function deleteRequirement(shiftId, roleId, facilityId) {
   if (!confirm('למחוק דרישה זו?')) return;
   try {
-    const r = await fetch(`/admin/shifts/${shiftId}/requirements/${roleId}/delete`, {method:'POST'});
+    const r = await fetch(`/admin/shifts/${shiftId}/requirements/${roleId}/delete`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ facility_id: facilityId != null ? facilityId : null })
+    });
     const data = await r.json();
     if (data.success) location.reload();
     else alert('שגיאה: ' + data.error);

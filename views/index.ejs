@@ -69,6 +69,36 @@
       </div>
     </div>
 
+    <!-- Preferred Facility Selector (shown after name selection) -->
+    <% if (facilities.length > 0) { %>
+    <div id="preferredFacilityContainer" class="card shadow-sm mb-4 d-none border-info">
+      <div class="card-header bg-info bg-opacity-10">
+        <h6 class="mb-0 text-info"><i class="bi bi-building me-2"></i>מתקן מועדף לשיבוץ</h6>
+      </div>
+      <div class="card-body">
+        <p class="text-muted small mb-3">
+          בחר מתקן שבו תרצה לעבוד. האלגוריתם יעדיף לשבץ אותך לשם, אולם המנהל יכול לשנות.
+        </p>
+        <div class="row g-2 align-items-end">
+          <div class="col-md-5">
+            <label class="form-label fw-bold">מתקן מועדף</label>
+            <select id="preferredFacilitySelect" class="form-select">
+              <option value="">-- ללא העדפה --</option>
+              <% facilities.forEach(f => { %>
+              <option value="<%= f.id %>"><%= f.name %></option>
+              <% }); %>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <button id="saveFacilityPrefBtn" class="btn btn-outline-info">
+              <i class="bi bi-floppy me-1"></i>שמור העדפה
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <% } %>
+
     <!-- Step 2: Calendar constraint selector -->
     <div id="constraintSection" class="d-none">
       <div class="card shadow-sm mb-4">
@@ -135,7 +165,63 @@
 <script>
 const SHIFTS = <%- JSON.stringify(shifts) %>;
 const PERSONNEL = <%- JSON.stringify(personnel) %>;
+const FACILITIES = <%- JSON.stringify(facilities) %>;
 </script>
 <script src="/js/constraints.js"></script>
+<script>
+// ===== Preferred Facility Feature =====
+(function() {
+  const facilitySelect = document.getElementById('personnelSelect');
+  const facilityContainer = document.getElementById('preferredFacilityContainer');
+  const facilityDropdown = document.getElementById('preferredFacilitySelect');
+  const saveBtn = document.getElementById('saveFacilityPrefBtn');
+  let currentPersonnelId = null;
+
+  if (!facilityContainer || !facilityDropdown) return;
+
+  facilitySelect.addEventListener('change', function() {
+    currentPersonnelId = this.value;
+    if (!currentPersonnelId) {
+      facilityContainer.classList.add('d-none');
+      return;
+    }
+    const person = PERSONNEL.find(p => String(p.id) === String(currentPersonnelId));
+    if (!person) return;
+    facilityDropdown.value = person.preferred_facility_id || '';
+    facilityContainer.classList.remove('d-none');
+    if (saveBtn) saveBtn.textContent = 'שמור העדפה';
+  });
+
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async function() {
+      if (!currentPersonnelId) return;
+      const facilityId = facilityDropdown.value || null;
+      try {
+        const r = await fetch(`/personnel/${currentPersonnelId}/preferred-facility`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ preferred_facility_id: facilityId })
+        });
+        const data = await r.json();
+        if (data.success) {
+          saveBtn.textContent = '✓ נשמר!';
+          saveBtn.classList.add('btn-success');
+          saveBtn.classList.remove('btn-outline-info');
+          setTimeout(() => {
+            saveBtn.textContent = 'שמור העדפה';
+            saveBtn.classList.remove('btn-success');
+            saveBtn.classList.add('btn-outline-info');
+          }, 2500);
+          // Update local cache
+          const person = PERSONNEL.find(p => String(p.id) === String(currentPersonnelId));
+          if (person) person.preferred_facility_id = facilityId ? parseInt(facilityId) : null;
+        } else {
+          alert('שגיאה: ' + data.error);
+        }
+      } catch(e) { alert('שגיאת רשת'); }
+    });
+  }
+})();
+</script>
 
 <%- include('partials/footer') %>

@@ -124,6 +124,37 @@ async function generate(startDate, endDate, facilityIds, periodId) {
     periodWorkload[personnelId][key] = (periodWorkload[personnelId][key] || 0) + 1;
   }
 
+  // Build facility preference map: personnelId -> preferredFacilityId
+  const facilityPreference = {};
+  allPersonnel.forEach(p => {
+    if (p.preferred_facility_id) facilityPreference[p.id] = p.preferred_facility_id;
+  });
+
+  // Get requirements for a specific (facility, shift) - facility-specific first, then global fallback
+  function getReqsForFacilityShift(facilityId, shiftId) {
+    const specific = allRequirements.filter(r =>
+      r.shift_id === shiftId && r.facility_id === facilityId
+    );
+    if (specific.length > 0) return specific;
+    // Fall back to global (facility_id = null/undefined)
+    return allRequirements.filter(r =>
+      r.shift_id === shiftId && (r.facility_id === null || r.facility_id === undefined)
+    );
+  }
+
+  // Sort factory: prefers personnel who prefer the given facility, then by workload
+  function makeSortFn(facilityId) {
+    return (a, b) => {
+      // 0 = prefers this facility, 1 = no preference, 2 = prefers a different facility
+      const aPref = facilityPreference[a.id] === facilityId ? 0
+                  : facilityPreference[a.id] ? 2 : 1;
+      const bPref = facilityPreference[b.id] === facilityId ? 0
+                  : facilityPreference[b.id] ? 2 : 1;
+      if (aPref !== bPref) return aPref - bPref;
+      return (workload[a.id] || 0) - (workload[b.id] || 0) || a.name.localeCompare(b.name);
+    };
+  }
+
   const targetFacilities = facilities.filter(f => facilityIds.includes(f.id));
   if (!targetFacilities.length) throw new Error('לא נמצאו מתקנים תואמים');
   if (!shifts.length) throw new Error('לא הוגדרו משמרות');
@@ -134,8 +165,10 @@ async function generate(startDate, endDate, facilityIds, periodId) {
 
   for (const dateStr of dates) {
     for (const facility of targetFacilities) {
+      const sortByFacilityAndWorkload = makeSortFn(facility.id);
+
       for (const shift of shifts) {
-        const reqs = allRequirements.filter(r => r.shift_id === shift.id);
+        const reqs = getReqsForFacilityShift(facility.id, shift.id);
         if (!reqs.length) continue;
 
         let commanderAssigned = false;
@@ -153,10 +186,9 @@ async function generate(startDate, endDate, facilityIds, periodId) {
             isOverMaxShifts(p.id, dateStr)
           );
 
-          // Sort each group by workload
-          const sortByWorkload = (a, b) => (workload[a.id] || 0) - (workload[b.id] || 0) || a.name.localeCompare(b.name);
-          available.sort(sortByWorkload);
-          overLimitFallback.sort(sortByWorkload);
+          // Sort by facility preference first, then workload
+          available.sort(sortByFacilityAndWorkload);
+          overLimitFallback.sort(sortByFacilityAndWorkload);
 
           const pool = [...available, ...overLimitFallback];
           const toAssign = pool.slice(0, req.count);

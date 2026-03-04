@@ -82,6 +82,20 @@
       <span class="legend-item"><span class="legend-swatch" style="background:#fff3cd;border:2px solid #ffc107;"></span>מפקד משמרת (ללא הפרה)</span>
     </div>
 
+    <!-- Per-facility filter tabs -->
+    <% const schedFacilityNames = [...new Set(Object.values(grouped).flatMap(d => Object.keys(d)))].sort(); %>
+    <% if (schedFacilityNames.length > 1) { %>
+    <div class="d-flex gap-2 mb-3 flex-wrap align-items-center">
+      <strong class="small text-muted">סנן לפי מתקן:</strong>
+      <button class="btn btn-sm btn-primary facility-filter-btn" onclick="filterByFacility(null, this)">כל המתקנים</button>
+      <% schedFacilityNames.forEach(fn => { %>
+      <button class="btn btn-sm btn-outline-info facility-filter-btn" onclick="filterByFacility('<%= fn.replace(/'/g, "\\'") %>', this)">
+        <i class="bi bi-building me-1"></i><%= fn %>
+      </button>
+      <% }); %>
+    </div>
+    <% } %>
+
     <% if (Object.keys(grouped).length === 0) { %>
     <div class="alert alert-info text-center">
       <i class="bi bi-info-circle fs-1 d-block mb-2"></i>הסידור ריק - לא נמצאו שיבוצים
@@ -105,7 +119,7 @@
       <div class="card-body p-2">
         <% Object.keys(grouped[dateStr]).forEach(facilityName => { %>
         <% const facilityData = grouped[dateStr][facilityName]; %>
-        <div class="mb-2">
+        <div class="mb-2 facility-section" data-facility-name="<%= facilityName %>">
           <div class="fw-semibold text-info mb-2"><i class="bi bi-building me-1"></i><%= facilityName %></div>
           <div class="row g-2">
           <% Object.keys(facilityData).forEach(shiftName => { %>
@@ -461,6 +475,32 @@ async function confirmAddPerson() {
     }
     showToast(toastMsg, toastType);
   } catch(e) { showToast('שגיאת רשת', 'danger'); }
+}
+
+function filterByFacility(facilityName, btn) {
+  // Update button styles
+  document.querySelectorAll('.facility-filter-btn').forEach(b => {
+    b.classList.remove('btn-primary', 'btn-info');
+    b.classList.add('btn-outline-info');
+  });
+  btn.classList.remove('btn-outline-info');
+  btn.classList.add('btn-primary');
+
+  // Show/hide facility sections in all day cards
+  document.querySelectorAll('.facility-section').forEach(el => {
+    if (!facilityName || el.dataset.facilityName === facilityName) {
+      el.style.display = '';
+    } else {
+      el.style.display = 'none';
+    }
+  });
+
+  // Hide/show day cards that have no visible facilities
+  document.querySelectorAll('.schedule-day-card').forEach(card => {
+    const visibleFacilities = Array.from(card.querySelectorAll('.facility-section'))
+      .filter(el => el.style.display !== 'none');
+    card.style.display = visibleFacilities.length > 0 ? '' : 'none';
+  });
 }
 
 function showToast(message, type='success') {

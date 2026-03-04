@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Personnel, Roles, Shifts, Constraints } = require('../models/db');
+const { Personnel, Roles, Shifts, Constraints, Facilities } = require('../models/db');
 
 // Instructions page (public)
 router.get('/instructions', (req, res) => {
@@ -10,12 +10,16 @@ router.get('/instructions', (req, res) => {
 // Home - Constraints input page
 router.get('/', async (req, res) => {
   try {
-    const personnel = await Personnel.getAll();
-    const shifts = await Shifts.getAll();
+    const [personnel, shifts, facilities] = await Promise.all([
+      Personnel.getAll(),
+      Shifts.getAll(),
+      Facilities.getAll()
+    ]);
     res.render('index', {
       title: 'הגשת אילוצים - יחידה 6017',
       personnel,
       shifts,
+      facilities,
       success: req.query.success || null,
       error: req.query.error || null
     });
@@ -25,9 +29,22 @@ router.get('/', async (req, res) => {
       title: 'הגשת אילוצים - יחידה 6017',
       personnel: [],
       shifts: [],
+      facilities: [],
       success: null,
       error: 'שגיאה בטעינת הנתונים'
     });
+  }
+});
+
+// Update preferred facility for a personnel member (AJAX)
+router.post('/personnel/:id/preferred-facility', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { preferred_facility_id } = req.body;
+    await Personnel.updatePreferredFacility(id, preferred_facility_id ? parseInt(preferred_facility_id) : null);
+    res.json({ success: true });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
   }
 });
 
@@ -86,8 +103,11 @@ router.get('/schedule/:periodId', async (req, res) => {
     if (!period) {
       return res.redirect('/?error=סידור לא נמצא');
     }
-    const assignments = await Schedule.getAssignments(parseInt(req.params.periodId));
-    const stats = await Schedule.getWorkloadStats(parseInt(req.params.periodId));
+    const [assignments, stats, allFacilities] = await Promise.all([
+      Schedule.getAssignments(parseInt(req.params.periodId)),
+      Schedule.getWorkloadStats(parseInt(req.params.periodId)),
+      Facilities.getAll()
+    ]);
 
     // Group assignments by date -> facility -> shift
     const grouped = {};
@@ -108,7 +128,8 @@ router.get('/schedule/:periodId', async (req, res) => {
       title: `סידור עבודה - ${period.name}`,
       period,
       grouped,
-      stats
+      stats,
+      allFacilities
     });
   } catch (err) {
     console.error(err);

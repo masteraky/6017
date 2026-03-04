@@ -175,3 +175,20 @@ INSERT INTO shift_requirements (shift_id,role_id,count) SELECT s.id,r.id,1 FROM 
 INSERT INTO shift_requirements (shift_id,role_id,count) SELECT s.id,r.id,1 FROM shifts s,roles r WHERE s.name=N'משמרת לילה' AND r.name=N'פרמדיק' AND NOT EXISTS (SELECT 1 FROM shift_requirements sr WHERE sr.shift_id=s.id AND sr.role_id=r.id);
 
 INSERT INTO shift_requirements (shift_id,role_id,count) SELECT s.id,r.id,1 FROM shifts s,roles r WHERE s.name=N'משמרת לילה' AND r.name=N'אחות/אח' AND NOT EXISTS (SELECT 1 FROM shift_requirements sr WHERE sr.shift_id=s.id AND sr.role_id=r.id);
+
+-- ===================== SCHEMA MIGRATIONS =====================
+-- Add preferred_facility_id to personnel (nullable = no preference)
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='personnel' AND COLUMN_NAME='preferred_facility_id')
+    ALTER TABLE personnel ADD preferred_facility_id INT NULL;
+
+-- Add facility_id to shift_requirements (NULL = applies to all facilities)
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='shift_requirements' AND COLUMN_NAME='facility_id')
+    ALTER TABLE shift_requirements ADD facility_id INT NULL;
+
+-- Drop old unique constraint (shift_id, role_id) to replace with facility-aware version
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_NAME='uq_shift_role' AND TABLE_NAME='shift_requirements')
+    ALTER TABLE shift_requirements DROP CONSTRAINT uq_shift_role;
+
+-- Add new unique constraint that includes facility_id (NULL = global default for all facilities)
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_NAME='uq_facility_shift_role' AND TABLE_NAME='shift_requirements')
+    ALTER TABLE shift_requirements ADD CONSTRAINT uq_facility_shift_role UNIQUE (facility_id, shift_id, role_id);

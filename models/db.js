@@ -91,9 +91,11 @@ const Roles = {
 const Personnel = {
   async getAll() {
     const r = await query(
-      `SELECT p.*, r.name as role_name, r.is_commander_eligible
+      `SELECT p.*, r.name as role_name, r.is_commander_eligible,
+              f.name as preferred_facility_name
        FROM personnel p
        JOIN roles r ON p.role_id = r.id
+       LEFT JOIN facilities f ON p.preferred_facility_id = f.id
        WHERE p.is_active = 1
        ORDER BY r.name, p.name`
     );
@@ -102,33 +104,47 @@ const Personnel = {
 
   async getById(id) {
     const r = await query(
-      `SELECT p.*, r.name as role_name, r.is_commander_eligible
+      `SELECT p.*, r.name as role_name, r.is_commander_eligible,
+              f.name as preferred_facility_name
        FROM personnel p
        JOIN roles r ON p.role_id = r.id
+       LEFT JOIN facilities f ON p.preferred_facility_id = f.id
        WHERE p.id = @id`,
       [{ name: 'id', type: sql.Int, value: id }]
     );
     return r.recordset[0] || null;
   },
 
-  async create(name, roleId) {
+  async create(name, roleId, preferredFacilityId) {
     const r = await query(
-      'INSERT INTO personnel (name, role_id) OUTPUT INSERTED.id VALUES (@name, @roleId)',
+      'INSERT INTO personnel (name, role_id, preferred_facility_id) OUTPUT INSERTED.id VALUES (@name, @roleId, @pfid)',
       [
         { name: 'name', type: sql.NVarChar, value: name },
-        { name: 'roleId', type: sql.Int, value: roleId }
+        { name: 'roleId', type: sql.Int, value: roleId },
+        { name: 'pfid', type: sql.Int, value: preferredFacilityId || null }
       ]
     );
     return r.recordset[0].id;
   },
 
-  async update(id, name, roleId) {
+  async update(id, name, roleId, preferredFacilityId) {
     await query(
-      'UPDATE personnel SET name = @name, role_id = @roleId WHERE id = @id',
+      'UPDATE personnel SET name = @name, role_id = @roleId, preferred_facility_id = @pfid WHERE id = @id',
       [
         { name: 'id', type: sql.Int, value: id },
         { name: 'name', type: sql.NVarChar, value: name },
-        { name: 'roleId', type: sql.Int, value: roleId }
+        { name: 'roleId', type: sql.Int, value: roleId },
+        { name: 'pfid', type: sql.Int, value: preferredFacilityId || null }
+      ]
+    );
+  },
+
+  async updatePreferredFacility(id, preferredFacilityId) {
+    await query(
+      'UPDATE personnel SET preferred_facility_id = @pfid WHERE id = @id',
+      [
+        { name: 'id', type: sql.Int, value: id },
+        { name: 'pfid', type: sql.Int, value: preferredFacilityId || null }
       ]
     );
   },
@@ -229,35 +245,38 @@ const Shifts = {
 
   async getAllRequirements() {
     const r = await query(
-      `SELECT sr.*, r.name as role_name, s.name as shift_name
+      `SELECT sr.*, r.name as role_name, s.name as shift_name, f.name as facility_name
        FROM shift_requirements sr
        JOIN roles r ON sr.role_id = r.id
        JOIN shifts s ON sr.shift_id = s.id
-       ORDER BY s.order_num, r.name`
+       LEFT JOIN facilities f ON sr.facility_id = f.id
+       ORDER BY CASE WHEN sr.facility_id IS NULL THEN 0 ELSE 1 END, f.name, s.order_num, r.name`
     );
     return r.recordset;
   },
 
-  async setRequirement(shiftId, roleId, count) {
+  async setRequirement(shiftId, roleId, count, facilityId) {
     await query(
-      `IF EXISTS (SELECT 1 FROM shift_requirements WHERE shift_id=@sid AND role_id=@rid)
-         UPDATE shift_requirements SET count=@cnt WHERE shift_id=@sid AND role_id=@rid
+      `IF EXISTS (SELECT 1 FROM shift_requirements WHERE shift_id=@sid AND role_id=@rid AND ((@fid IS NULL AND facility_id IS NULL) OR facility_id=@fid))
+         UPDATE shift_requirements SET count=@cnt WHERE shift_id=@sid AND role_id=@rid AND ((@fid IS NULL AND facility_id IS NULL) OR facility_id=@fid)
        ELSE
-         INSERT INTO shift_requirements (shift_id, role_id, count) VALUES (@sid, @rid, @cnt)`,
+         INSERT INTO shift_requirements (shift_id, role_id, count, facility_id) VALUES (@sid, @rid, @cnt, @fid)`,
       [
         { name: 'sid', type: sql.Int, value: shiftId },
         { name: 'rid', type: sql.Int, value: roleId },
-        { name: 'cnt', type: sql.Int, value: count }
+        { name: 'cnt', type: sql.Int, value: count },
+        { name: 'fid', type: sql.Int, value: facilityId || null }
       ]
     );
   },
 
-  async deleteRequirement(shiftId, roleId) {
+  async deleteRequirement(shiftId, roleId, facilityId) {
     await query(
-      'DELETE FROM shift_requirements WHERE shift_id=@sid AND role_id=@rid',
+      'DELETE FROM shift_requirements WHERE shift_id=@sid AND role_id=@rid AND ((@fid IS NULL AND facility_id IS NULL) OR facility_id=@fid)',
       [
         { name: 'sid', type: sql.Int, value: shiftId },
-        { name: 'rid', type: sql.Int, value: roleId }
+        { name: 'rid', type: sql.Int, value: roleId },
+        { name: 'fid', type: sql.Int, value: facilityId || null }
       ]
     );
   }

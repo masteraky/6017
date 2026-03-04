@@ -141,8 +141,8 @@ router.post('/roles/:id/delete', requireAdmin, async (req, res) => {
 // ==================== PERSONNEL ====================
 router.post('/personnel', requireAdmin, async (req, res) => {
   try {
-    const { name, role_id } = req.body;
-    await Personnel.create(name, parseInt(role_id));
+    const { name, role_id, preferred_facility_id } = req.body;
+    await Personnel.create(name, parseInt(role_id), preferred_facility_id ? parseInt(preferred_facility_id) : null);
     res.redirect('/admin?tab=personnel&success=איש צוות נוסף בהצלחה');
   } catch (err) {
     res.redirect('/admin?tab=personnel&error=' + encodeURIComponent(err.message));
@@ -151,8 +151,8 @@ router.post('/personnel', requireAdmin, async (req, res) => {
 
 router.post('/personnel/:id/update', requireAdmin, async (req, res) => {
   try {
-    const { name, role_id } = req.body;
-    await Personnel.update(parseInt(req.params.id), name, parseInt(role_id));
+    const { name, role_id, preferred_facility_id } = req.body;
+    await Personnel.update(parseInt(req.params.id), name, parseInt(role_id), preferred_facility_id ? parseInt(preferred_facility_id) : null);
     res.json({ success: true });
   } catch (err) {
     res.json({ success: false, error: err.message });
@@ -232,8 +232,8 @@ router.post('/shifts/:id/delete', requireAdmin, async (req, res) => {
 router.post('/shifts/:id/requirements', requireAdmin, async (req, res) => {
   try {
     const shiftId = parseInt(req.params.id);
-    const { role_id, count } = req.body;
-    await Shifts.setRequirement(shiftId, parseInt(role_id), parseInt(count) || 1);
+    const { role_id, count, facility_id } = req.body;
+    await Shifts.setRequirement(shiftId, parseInt(role_id), parseInt(count) || 1, facility_id ? parseInt(facility_id) : null);
     res.json({ success: true });
   } catch (err) {
     res.json({ success: false, error: err.message });
@@ -242,7 +242,8 @@ router.post('/shifts/:id/requirements', requireAdmin, async (req, res) => {
 
 router.post('/shifts/:shiftId/requirements/:roleId/delete', requireAdmin, async (req, res) => {
   try {
-    await Shifts.deleteRequirement(parseInt(req.params.shiftId), parseInt(req.params.roleId));
+    const facilityId = req.body && req.body.facility_id != null ? parseInt(req.body.facility_id) : null;
+    await Shifts.deleteRequirement(parseInt(req.params.shiftId), parseInt(req.params.roleId), facilityId);
     res.json({ success: true });
   } catch (err) {
     res.json({ success: false, error: err.message });
